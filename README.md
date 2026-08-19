@@ -90,6 +90,19 @@ much it tightens the page.
 
 ## Status
 
+**1.4.0 — hue-traced tokens, italic weight, hairline rule.** The three flat greys
+become two inks and four surfaces: a category is now separated by shifting the
+*same* ink 15% toward a desaturated hue, at identical lightness, rather than by a
+colour of its own. The blockquote moves onto the cite ink so a quoted source no
+longer reads as code. `em`/`i` get `font-weight: 500` (bold-italic excluded, so
+`strong` keeps its weight). `hr` becomes a 1px hairline at 18%.
+
+The typed source palette — app, PDF, Markdown, CSS, JSON — is specified in
+[`docs/design-principles.md`](docs/design-principles.md) but **not implemented**:
+nothing in assistant markdown carries a source type, so there is no selector to
+attach it to. `docs/selectors.md` has a console dump that reports what citation
+and file chips actually are.
+
 **1.3.0 — one token set, a full blockquote reset, and width on a hook that cannot
 be shadowed.** Three literal slate blues are gone, replaced by three
 `currentColor` tokens. The blockquote now clears ChatGPT's borders, box-shadow,
