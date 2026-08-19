@@ -13,40 +13,40 @@ Every rule is the same scope plus a plain HTML element:
 
 | Hook | Stability | If it breaks |
 | --- | --- | --- |
-| `[data-message-author-role="assistant"]` | High. Semantic data attribute, unchanged across years of redesigns. | Everything except width stops applying. One-line fix: find and replace the scope string. |
+| `[data-message-author-role="assistant"]` | High. Semantic data attribute, confirmed present on the current build. | Everything except width stops applying. One-line fix: find and replace the scope string — `section[data-turn="assistant"]` is the measured alternative. |
 | `.markdown` | High. Named for its purpose, not its styling. | Same. |
 | `p`, `h2`, `h3`, `ul`, `ol`, `li`, `code`, `blockquote`, `em`, `i`, `strong`, `b`, `hr` | Maximum. Plain HTML. | Cannot break. |
 | `:not(pre) > code` | Maximum. Structural. | Cannot break. |
 | `blockquote::before/::after`, `blockquote p::before/::after` | Maximum. | Cannot break. |
 
-## Content width — one rule
+## Content width — one rule, measured
 
 ```css
-* { --thread-content-max-width: <value> !important; }
+main { --thread-content-max-width: <value> !important; }
 ```
 
-The universal selector is not a guess about the DOM — it is the only selector that
-cannot miss. ChatGPT's own `--thread-content-max-width` is the hook; `!important`
-means an element that declares the variable **on itself** cannot shadow it, whether
-that declaration comes from a Tailwind arbitrary property
-(`[--thread-content-max-width:32rem]`) or from a plain rule in ChatGPT's own
-stylesheet. That shadowing is what a `:root`-only override misses.
+Not a guess. The live dump reports:
 
-### Shrinking it safely
+```
+redeclared on 1 element(s): main=74rem [in main]
+composer inside main: true
+```
 
-`*` is the fallback for not knowing where the variable is redeclared. The width
-section of the dump below answers that, and the answer picks the selector
-mechanically:
+That settles it. `<main>` is the only element that declares
+`--thread-content-max-width`; nothing below it shadows the value; the composer and
+the message columns inherit from that same node. A rule on `<main>` reaches all
+three, and `!important` beats ChatGPT's own declaration on the same element.
 
-| Dump says | Use | Why |
-| --- | --- | --- |
-| redeclared on 0 elements | `:root { … }` | nothing to shadow it; inheritance reaches everything |
-| redeclared, all `[in main]`, composer in main | `main, main * { … }` | covers every redeclaration and all three columns |
-| any redeclaration `[OUTSIDE main]`, or composer outside main | keep `*` | no smaller root contains all three columns |
+`<main>` is a semantic landmark, not a utility class, so this is not a
+Tailwind-churn hook.
 
-Do not shrink it on the assumption that the composer lives inside `main`. If that
-is wrong, the composer stops tracking the message column and the centre axis
-breaks — which is the one thing content width exists to prevent.
+1.4.0 used `*` as insurance against not knowing where the variable was declared.
+With the declaration site measured, that insurance is dead weight — it put an
+explicit declaration on every node in the thread and bought no coverage that
+inheriting from `<main>` does not already give.
+
+If a future build declares the variable deeper, the dump reports it as a second
+line and the fix is `main, main *`.
 
 Everything that reads the variable moves together — assistant messages, user
 messages, composer — **as long as it reads the variable**. Anything that hard-codes
@@ -95,8 +95,8 @@ it again with the style enabled to confirm the fix.
   const show = (l, e) => R.push('  ' + l + ': ' + (e ? getComputedStyle(e).maxWidth + ' / actual ' + Math.round(e.getBoundingClientRect().width) + 'px class="' + cls(e) + '"' : 'not found'));
   const a = document.querySelector('[data-message-author-role="assistant"]');
   const u = document.querySelector('[data-message-author-role="user"]');
-  show('assistant col', a && a.closest('article') && a.closest('article').firstElementChild);
-  show('user col', u && u.closest('article') && u.closest('article').firstElementChild);
+  show('assistant col', a && a.closest('section[data-turn]') && a.closest('section[data-turn]').firstElementChild);
+  show('user col', u && u.closest('section[data-turn]') && u.closest('section[data-turn]').firstElementChild);
   show('composer', document.querySelector('main form'));
   R.push('  --user-chat-width: ' + (getComputedStyle(document.documentElement).getPropertyValue('--user-chat-width').trim() || '(unset)'));
   console.log(R.join('\n'));
@@ -126,47 +126,58 @@ citations map onto `blockquote`, which is why that one is wired; inline citation
 chips, app blocks and file chips (PDF, Markdown, CSS, JSON) have no known
 selector.
 
-### Finding out, without guessing
+### What a live dump confirmed
 
-The dump below asks no questions about class names. It prints every semantic
-attribute — `data-*`, `aria-*`, `href`, `download`, `type`, `role` — on every
-element inside one assistant turn. Whatever hooks exist will be in the output;
-whatever is missing is missing.
+A full-thread dump of every `data-*`, `aria-*`, `href`, `download`, `type`, `role`,
+`title` and `alt` attribute produced this vocabulary:
 
-Produce a turn that contains all three targets first: ask ChatGPT something that
-makes it cite a web source, attach a PDF and a `.json` or `.css` file to the
-conversation, and use an app/connector block if you have one. Then paste:
+| Hook | On | Note |
+| --- | --- | --- |
+| `data-message-author-role` | inner div of each turn | the scope hook, still alive |
+| `data-message-id` | same element | |
+| `data-turn` | `<section>` | `"user"` / `"assistant"` — a second scope hook if the first is ever dropped |
+| `data-turn-id`, `data-testid="conversation-turn-N"` | `<section>` | |
+| `data-turn-id-container`, `data-is-intersecting` | virtualisation wrappers | scroll bookkeeping, not styling hooks |
+| `data-testid="copy-turn-action-button"` etc. | action buttons | deliberate non-targets |
+| `alt`, `aria-label` on image attachments | `<img>`, its `<button>` | carries the **filename**, e.g. `alt="…​.png"` |
+
+Turns are `<section>`, **not `<article>`** — a `closest('article')` lookup returns
+null on the current build.
+
+What the dump did **not** contain: any web citation, any non-image file
+attachment, any app/connector block. The thread had none, so nothing about their
+markup is known.
+
+### Still needed
+
+Produce one assistant turn that actually contains the three targets — ask
+something that makes ChatGPT cite a web source, attach a PDF and a `.json` or
+`.css` file, use an app/connector block if you have one — then paste this. It
+scopes to a single turn so the output is not truncated:
 
 ```js
 (() => {
-  const a = document.querySelector('[data-message-author-role="assistant"]');
-  const turn = (a && a.closest('article')) || document.querySelector('main');
-  const rows = [];
+  const a = [...document.querySelectorAll('[data-message-author-role="assistant"]')].pop();
+  const turn = (a && (a.closest('section[data-turn]') || a.closest('[data-turn-id]'))) || a;
+  if (!turn) return console.log('no assistant turn found');
   const keep = n => n.startsWith('data-') || n.startsWith('aria-') ||
     ['href', 'download', 'type', 'role', 'title', 'alt'].includes(n);
+  const rows = [];
   turn.querySelectorAll('*').forEach(e => {
     const at = [...e.attributes].filter(x => keep(x.name));
     if (at.length) rows.push('<' + e.tagName.toLowerCase() + '> ' +
       at.map(x => x.name + '="' + x.value.slice(0, 70) + '"').join(' ') +
       '  | ' + (e.textContent || '').trim().slice(0, 40));
   });
-  console.log('=== SEMANTIC ATTRIBUTES IN ONE ASSISTANT TURN ===\n' + rows.join('\n'));
-
-  const gv = e => getComputedStyle(e).getPropertyValue('--thread-content-max-width').trim();
-  const re = [...document.querySelectorAll('*')].filter(e => e.parentElement && gv(e) !== gv(e.parentElement));
-  console.log('=== WIDTH ===\nredeclared on ' + re.length + ' element(s): ' +
-    re.map(e => e.tagName.toLowerCase() + '=' + gv(e) + (document.querySelector('main').contains(e) ? ' [in main]' : ' [OUTSIDE main]')).join(', '));
-  console.log('composer inside main: ' + !!document.querySelector('main form'));
+  console.log('=== ONE ASSISTANT TURN ===\n' + rows.join('\n'));
 })()
 ```
 
-**Run it with DenseGPT disabled** — our own `*` rule sets the width variable on
-every element, which makes the redeclaration count read as zero.
-
 A type is wirable only if the output shows an attribute that *names* the type on a
-stable element. A class name, a position, or the visible filename text is not a
-hook: `nth-child`, text matching and guessed classes are all banned, so a category
-with no attribute stays unimplemented rather than faked.
+stable element — `data-*`, `aria-*`, `href`, `download`, or a filename in `alt` /
+`download`. A class name, a position, or visible text is not a hook: `nth-child`,
+text matching and guessed classes are all banned, so a category with no attribute
+stays unimplemented rather than faked.
 
 ## No theme hooks
 
@@ -189,6 +200,7 @@ highlighting all stay ChatGPT's. The composer is affected only by content width.
 
 ## Status
 
-v1.3.0. Scope and spacing selectors are confirmed by live testing. Two things are
-unconfirmed and both are answered by the console check above: the true source of
-the blockquote double line, and which columns the width rule reaches.
+v1.5.0. The scope hook and the width declaration site are both confirmed against a
+live DOM. Still unconfirmed: the true source of the blockquote double line, and
+the markup of citations, file attachments and app blocks — the dumped thread
+contained none of them.

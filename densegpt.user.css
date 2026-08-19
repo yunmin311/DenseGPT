@@ -180,19 +180,25 @@
 
 /* =======================  6. content width  =========================
 
-   One rule. The universal selector is not a guess about the DOM: it is
-   the only selector that cannot miss. ChatGPT's own
-   --thread-content-max-width is the hook; !important means an element
-   that declares the variable on itself - in a Tailwind arbitrary
-   property or in ChatGPT's own stylesheet - cannot shadow it.
+   Measured, not assumed. A live DOM dump reports:
 
-   Everything that reads the variable moves together: assistant
-   messages, user messages and the composer, as long as they read it.
-   Anything that hard-codes a literal max-width instead is out of
-   reach; docs/selectors.md has the console check that reports which.
+     redeclared on 1 element(s): main=74rem [in main]
+     composer inside main: true
+
+   So <main> is the single declaration site for
+   --thread-content-max-width, nothing below it shadows the value, and
+   the composer inherits from the same node as the messages. One rule
+   on <main> is therefore sufficient, and 1.4.0's universal selector
+   was overkill - it put an explicit declaration on every node in the
+   thread for no coverage the element it inherits from does not give.
+
+   <main> is a semantic landmark element, not a utility class, so this
+   is not a Tailwind-churn hook. If a future build declares the
+   variable deeper, the dump in docs/selectors.md reports it and the
+   fix is to add `main *`.
    ==================================================================== */
 
-* {
+main {
   --thread-content-max-width: /*[[content_width]]*/ !important;
 }
 

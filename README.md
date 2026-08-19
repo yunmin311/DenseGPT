@@ -34,9 +34,10 @@ One variable, content width:
 | Full | `none` | |
 
 Auto replaces the Widescreen extension: 72% of viewport width, floored at 48rem,
-capped at 78rem, re-evaluated live as the window is resized or zoomed. It is
-applied through ChatGPT's own `--thread-content-max-width` property, so everything
-that reads it — messages and composer — moves together on one centre axis.
+capped at 78rem, re-evaluated live as the window is resized or zoomed. One rule,
+`main { --thread-content-max-width: … !important }`, on the element a live DOM
+dump confirmed to be the only declaration site — messages and composer both
+inherit it from there and stay on one centre axis.
 
 Spacing is not configurable. Every value is fixed and verified by eye on real
 output — no density slider, no scalar, no calc. They are listed in full in
@@ -72,7 +73,7 @@ background · `"explain in detail"` overrides everything.
 ## Structure
 
 ```
-densegpt.user.css          the whole visual layer, 199 lines
+densegpt.user.css          the whole visual layer, 205 lines
 STYLE.md                   response spec
 presets/                   per-tool paste blocks
 docs/design-principles.md  the density model, and what is never compressed
@@ -89,6 +90,16 @@ distinguishable at a glance. Anything that fails that is a regression, however
 much it tightens the page.
 
 ## Status
+
+**1.5.0 — content width moves onto a measured hook.** A live DOM dump reports
+`--thread-content-max-width` declared on exactly one element, `<main>`, with the
+composer inside it. The rule shrinks from `* { … }` to `main { … }`: same coverage
+of assistant, user and composer columns, without an explicit declaration on every
+node in the thread.
+
+Citation, attachment and app-block tints are still **not implemented**. The dumped
+thread contained none of those elements, so their markup is unknown, and a guessed
+selector is worse than an absent one.
 
 **1.4.0 — hue-traced tokens, italic weight, hairline rule.** The three flat greys
 become two inks and four surfaces: a category is now separated by shifting the

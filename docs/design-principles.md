@@ -126,12 +126,11 @@ Auto tracks the window: 72% of viewport width, never narrower than 48rem, never
 wider than 78rem. Resizing or zooming re-evaluates it — nothing has to be
 re-selected.
 
-It is applied by one rule, `* { --thread-content-max-width: … !important }`,
-through ChatGPT's own custom property, so everything that reads that property
-moves together. `!important` on the universal selector is what stops an element
-that declares the variable on itself from shadowing the override — see
-[`selectors.md`](selectors.md) for why that matters and how to confirm which
-columns it reaches.
+It is applied by one rule, `main { --thread-content-max-width: … !important }`,
+through ChatGPT's own custom property. A live DOM dump confirmed that `<main>` is
+the only element that declares that property and that the composer sits inside it,
+so messages and composer inherit the same value from the same node and stay on one
+centre axis — see [`selectors.md`](selectors.md) for the measurement.
 
 ## History
 
