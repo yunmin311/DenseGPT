@@ -172,19 +172,33 @@ selector on an ARIA attribute, not text matching, and `role="group"` disambiguat
 the tile root from the `button` inside it and from the message-action groups,
 which also use `role="group"` but never end in a file extension.
 
-Implemented: citation, and `.pdf` / `.md` / `.markdown` / `.css` / `.json` tiles.
-Untyped files get no tint.
+All three are implemented: citation, `.pdf` / `.md` / `.markdown` / `.css` /
+`.json` tiles, and the app block. Untyped files get no tint.
 
-**Not implemented: the app block.** The attribute name is confirmed, the element is
-not. `data-app-block-preview-parking` reads like portal scaffolding, so
-`[data-app-block-preview]` may be a persistent, possibly full-size container rather
-than the visible card — and a 6% tint on a full-size container is a grey rectangle
-across the thread. One check settles it:
+### The app block, measured
 
-```js
-const e = document.querySelector('[data-app-block-preview]');
-console.log(e ? [e.outerHTML.slice(0, 500), getComputedStyle(e).display, JSON.stringify(e.getBoundingClientRect())] : 'not present');
+`[data-app-block-preview="true"]` is a real block, not portal scaffolding —
+`display: block`, 647 × 148 at the time of the dump, inside the message column. But
+it is a **layout wrapper**, not the painted surface:
+
+```html
+<div class="group/app-block-preview not-prose mt-4 mb-1 w-full overflow-visible"
+     data-app-block-preview="true">
+  …
+      <div class="relative flex h-full w-full" style="height: 72px;">
+        <div class="absolute inset-0 … bg-token-main-surface-primary …">
 ```
+
+The card is 72px tall inside a 148px wrapper, so tinting the wrapper would paint a
+band larger than the card. The paint has to land on the element carrying
+`bg-token-main-surface-primary`.
+
+That is a class match, and it is the one in the file — deliberately. It is
+ChatGPT's own **semantic surface token**, not a layout utility like `mt-4`, and the
+selector is confined to the `[data-app-block-preview]` subtree so it cannot leak.
+Nested surfaces are opaque, so the topmost covers those below and tints never
+accumulate. If ChatGPT renames its surface tokens this one rule stops tinting and
+nothing else is affected.
 
 ### Probes
 

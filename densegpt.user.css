@@ -1,7 +1,7 @@
-﻿/* ==UserStyle==
+/* ==UserStyle==
 @name           DenseGPT
 @namespace      github.com/yunmin311/DenseGPT
-@version        1.6.0
+@version        1.7.0
 @description    Verified compact reading layout for ChatGPT, one shared set of surface tokens, and auto content width. No density algorithm, no theme detection, no page background or text colour changes.
 @author         yunmin311
 @license        MIT
@@ -55,6 +55,7 @@
 main {
   --dg-ink: currentColor;
   --dg-ink-cite: color-mix(in srgb, currentColor 85%, #5b7196);
+  --dg-ink-app: color-mix(in srgb, currentColor 85%, #5b7d96);
   --dg-ink-pdf: color-mix(in srgb, currentColor 85%, #96706b);
   --dg-ink-md: color-mix(in srgb, currentColor 85%, #6b9680);
   --dg-ink-css: color-mix(in srgb, currentColor 85%, #806b96);
@@ -63,6 +64,7 @@ main {
   --dg-surface-soft: color-mix(in srgb, var(--dg-ink) 5%, transparent);
   --dg-surface-block: color-mix(in srgb, var(--dg-ink-cite) 6%, transparent);
   --dg-surface-cite: color-mix(in srgb, var(--dg-ink-cite) 7%, transparent);
+  --dg-surface-app: color-mix(in srgb, var(--dg-ink-app) 7%, transparent);
   --dg-surface-pdf: color-mix(in srgb, var(--dg-ink-pdf) 6%, transparent);
   --dg-surface-md: color-mix(in srgb, var(--dg-ink-md) 6%, transparent);
   --dg-surface-css: color-mix(in srgb, var(--dg-ink-css) 6%, transparent);
@@ -265,6 +267,26 @@ main [role="group"][aria-label$=".css" i] button {
 main [role="group"][aria-label$=".json" i] button {
   background-image: linear-gradient(var(--dg-surface-json), var(--dg-surface-json));
   border-color: var(--dg-edge-json);
+}
+
+
+/* ========================  8. app block  ============================
+
+   Measured. [data-app-block-preview="true"] is a real block, not a
+   full-viewport portal - 647 x 148 at the time of the dump, display
+   block, inside the message column. But it is a layout wrapper, not
+   the painted surface: it sits around a card that is only 72px tall,
+   so tinting the wrapper would paint a band larger than the card.
+
+   The painted surface inside it carries ChatGPT's own semantic surface
+   token class, bg-token-main-surface-primary. That is a design-token
+   name, not a layout utility, and the match is confined to the app
+   block subtree, so it cannot leak. Nested surfaces are opaque, so the
+   topmost one covers the ones below and tints never accumulate.
+   ==================================================================== */
+
+main [data-app-block-preview] [class*="bg-token-main-surface"] {
+  background-image: linear-gradient(var(--dg-surface-app), var(--dg-surface-app));
 }
 
 }

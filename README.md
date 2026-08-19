@@ -1,4 +1,4 @@
-﻿# DenseGPT
+# DenseGPT
 
 **Make ChatGPT denser, calmer and easier to scan — both visually and linguistically.**
 

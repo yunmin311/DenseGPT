@@ -85,7 +85,7 @@ share one lightness and differ only in trace hue.
 | Markdown | `#6b9680` grey-green | 6% | 22% | `[aria-label$=".md" i]` tile |
 | CSS | `#806b96` grey-violet | 6% | 22% | `[aria-label$=".css" i]` tile |
 | JSON / config | `#96896b` grey-sand | 6% | 22% | `[aria-label$=".json" i]` tile |
-| app block | — | — | — | **not wired**, see [`selectors.md`](selectors.md) |
+| app block | `#5b7d96` cool grey-blue | 7% | — | surface inside `[data-app-block-preview]` |
 
 Tokens are declared on `<main>`, not on the markdown root, because file tiles live
 in the *user* turn. `currentColor` still resolves on the element that uses the
