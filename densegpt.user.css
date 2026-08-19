@@ -34,16 +34,28 @@
 
 /* ========================  0. surface tokens  =======================
 
-   The only auxiliary visual language in the file. Three tokens, all
-   mixed from currentColor, so both themes adapt with no theme
-   detection and no second grey. No rule below may invent its own
-   colour.
+   The only auxiliary visual language in the file. Two inks, four
+   surfaces derived from them. No rule below may invent its own colour.
+
+   Both inks start from currentColor, so lightness comes from the
+   page's own text colour and light/dark adapt with no theme
+   detection. A type is separated by a *trace* of hue on the same ink,
+   never by a colour of its own: 15% of a desaturated blue is enough to
+   tell a source from a piece of code, and still reads as grey.
+
+   Surface alpha stays in 5-6%. Edges are the only thing allowed to
+   deepen, and only to 18-35%.
    ==================================================================== */
 
 [data-message-author-role="assistant"] .markdown {
-  --dg-surface-soft: color-mix(in srgb, currentColor 4%, transparent);
-  --dg-surface-block: color-mix(in srgb, currentColor 5.5%, transparent);
-  --dg-edge: color-mix(in srgb, currentColor 35%, transparent);
+  --dg-ink: currentColor;
+  --dg-ink-cite: color-mix(in srgb, currentColor 85%, #5b7196);
+
+  --dg-surface-soft: color-mix(in srgb, var(--dg-ink) 5%, transparent);
+  --dg-surface-block: color-mix(in srgb, var(--dg-ink-cite) 6%, transparent);
+
+  --dg-edge: color-mix(in srgb, var(--dg-ink-cite) 35%, transparent);
+  --dg-edge-soft: color-mix(in srgb, var(--dg-ink) 18%, transparent);
 }
 
 
@@ -141,7 +153,32 @@
 }
 
 
-/* =======================  4. content width  =========================
+/* ==========================  4. emphasis  ===========================
+   Italic alone is too weak to separate at this line-height. 500 is a
+   half step, not a second bold. Bold-italic must stay bold.
+   ==================================================================== */
+
+[data-message-author-role="assistant"] .markdown :is(em, i) {
+  font-weight: 500;
+}
+
+[data-message-author-role="assistant"] .markdown :is(strong, b) :is(em, i) {
+  font-weight: inherit;
+}
+
+
+/* =======================  5. horizontal rule  =======================
+   A hairline at the low end of the edge range, not a chapter break.
+   ==================================================================== */
+
+[data-message-author-role="assistant"] .markdown hr {
+  border: 0;
+  border-top: 1px solid var(--dg-edge-soft);
+  margin: 1.1em 0;
+}
+
+
+/* =======================  6. content width  =========================
 
    One rule. The universal selector is not a guess about the DOM: it is
    the only selector that cannot miss. ChatGPT's own

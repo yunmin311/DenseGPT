@@ -19,31 +19,78 @@ derived, multiplied or computed at runtime.
 | `li` | `margin: 0.12em 0` |
 | inline code | `background: var(--dg-surface-soft)` · `padding: 0.08em 0.28em` · `border-radius: 4px` · no border, no shadow |
 | `blockquote` | left rule `3px solid var(--dg-edge)` · `background: var(--dg-surface-block)` · `padding: 0.55em 0.85em` · `margin: 0.65em 0` · `border-radius: 6px` · inherited text colour |
+| `em`, `i` | `font-weight: 500` — italic alone does not separate at this line-height. Bold-italic is excluded so it stays bold. |
+| `hr` | `1px solid var(--dg-edge-soft)` · `margin: 1.1em 0` — a hairline, not a chapter break |
 
 Anything not in that table is ChatGPT's own styling, untouched.
 
 ## One set of tokens
 
-Every colour in the file comes from three tokens, declared once on the assistant
-markdown root:
+Two inks. Four surfaces derived from them. Declared once, on the assistant markdown
+root:
 
 ```css
---dg-surface-soft:  color-mix(in srgb, currentColor 4%,   transparent);
---dg-surface-block: color-mix(in srgb, currentColor 5.5%, transparent);
---dg-edge:          color-mix(in srgb, currentColor 35%,  transparent);
+--dg-ink:           currentColor;
+--dg-ink-cite:      color-mix(in srgb, currentColor 85%, #5b7196);
+
+--dg-surface-soft:  color-mix(in srgb, var(--dg-ink) 5%, transparent);
+--dg-surface-block: color-mix(in srgb, var(--dg-ink-cite) 6%, transparent);
+--dg-edge:          color-mix(in srgb, var(--dg-ink-cite) 35%, transparent);
+--dg-edge-soft:     color-mix(in srgb, var(--dg-ink) 18%, transparent);
 ```
 
-| Token | Used by | Used by nothing else |
-| --- | --- | --- |
-| `--dg-surface-soft` | inline code fill | |
-| `--dg-surface-block` | blockquote fill | |
-| `--dg-edge` | blockquote left rule | |
+| Token | Used by |
+| --- | --- |
+| `--dg-surface-soft` | inline code fill |
+| `--dg-surface-block` | blockquote fill |
+| `--dg-edge` | blockquote left rule |
+| `--dg-edge-soft` | horizontal rule |
 
-They are mixed from `currentColor`, so both themes adapt with no theme detection
-and no second grey anywhere. The rule is absolute: **no rule may invent its own
-colour.** Earlier versions had three unrelated slate blues — `rgba(60,82,115)`,
-`rgba(80,100,130)`, `rgba(100,116,139)` — which is what made the greys look dirty
-and inconsistent. There are now no literal colour values in the stylesheet at all.
+Nothing else may define a colour. Every token is anchored to `currentColor`, so
+lightness comes from the page's own text and both themes adapt with no theme
+detection.
+
+### Type is a trace of hue, not a colour
+
+A category is separated by shifting the *same* ink a few percent, never by giving
+it a colour of its own. `--dg-ink-cite` is 85% currentColor and 15% of a
+desaturated blue — enough that a quoted source does not read as a piece of code,
+not enough to register as blue. First impression stays grey.
+
+The constraints that matter, in order:
+
+| Constraint | Value |
+| --- | --- |
+| surface alpha | 5–6% — never outside 5–7% |
+| hue shift between types | ≤ 15% of a desaturated anchor |
+| saturation of the anchor | very low |
+| lightness across types | identical (all inherit from `currentColor`) |
+| edges and icons | 18–35%, the only things allowed to deepen |
+
+Earlier versions had three unrelated slate blues — `rgba(60,82,115)`,
+`rgba(80,100,130)`, `rgba(100,116,139)` — one per element, at three different
+lightnesses. That is what made the greys look dirty. There is now exactly one
+literal colour in the stylesheet: the hue anchor.
+
+### Typed surfaces — specified, not wired
+
+The same system extends to typed source chips. The palette is settled; what is
+missing is a DOM hook, because nothing in ChatGPT's assistant markdown carries a
+source *type*:
+
+| Type | Ink | Surface |
+| --- | --- | --- |
+| plain inline code | `currentColor` | 5% |
+| citation / source | `currentColor` 85% + blue | 6–7% |
+| app block | `currentColor` 85% + blue | 7% |
+| PDF | `currentColor` 85% + warm red | 6% |
+| Markdown | `currentColor` 85% + green | 6% |
+| CSS | `currentColor` 85% + violet | 6% |
+| JSON / config | `currentColor` 85% + sand | 6% |
+
+Only the first two are implemented, because only they have a selector. The rest
+stay here until a live DOM check shows what element carries the type — writing
+them against guessed class names is how 1.0.0 and 1.2.0 failed.
 
 ## What the file must never do
 
@@ -111,7 +158,11 @@ Both themes, one long answer and one short one:
 - [ ] Inline code — faint chip, small radius, no border, unchanged size and colour
 - [ ] Blockquote — **one** left rule, fill faint, four corners rounded, text
       optically centred with no rightward shift, no second line
-- [ ] Inline code and blockquote greys — same family, no colour cast between them
+- [ ] Inline code and blockquote greys — same family, same lightness; the quote is
+      distinguishable from code but still reads grey, not blue
+- [ ] Italic — separates from body text without reading as a second bold;
+      bold-italic still bold
+- [ ] Horizontal rule — a hairline that separates without announcing a chapter
 - [ ] Width ON vs OFF — Auto tracks the window as it is resized, message column and
       composer share one centre axis
 - [ ] Fenced code blocks — identical to stock, both themes

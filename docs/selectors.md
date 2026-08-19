@@ -15,7 +15,7 @@ Every rule is the same scope plus a plain HTML element:
 | --- | --- | --- |
 | `[data-message-author-role="assistant"]` | High. Semantic data attribute, unchanged across years of redesigns. | Everything except width stops applying. One-line fix: find and replace the scope string. |
 | `.markdown` | High. Named for its purpose, not its styling. | Same. |
-| `p`, `h2`, `h3`, `ul`, `ol`, `li`, `code`, `blockquote` | Maximum. Plain HTML. | Cannot break. |
+| `p`, `h2`, `h3`, `ul`, `ol`, `li`, `code`, `blockquote`, `em`, `i`, `strong`, `b`, `hr` | Maximum. Plain HTML. | Cannot break. |
 | `:not(pre) > code` | Maximum. Structural. | Cannot break. |
 | `blockquote::before/::after`, `blockquote p::before/::after` | Maximum. | Cannot break. |
 
@@ -99,6 +99,36 @@ What each line answers:
 | `elements redeclaring it` | where `--thread-content-max-width` is actually overridden |
 | `assistant col` / `user col` / `composer` | which of the three the width rule actually reaches |
 | `--user-chat-width` | whether user bubbles are sized by a separate variable |
+
+## Missing hook: typed source chips
+
+The typed surface palette in [`design-principles.md`](design-principles.md) is
+settled, but only two of its seven entries are implemented. Nothing in ChatGPT's
+assistant markdown carries a source *type* — there is no `data-source-type`, no
+`<cite>`, no per-type class that markdown rendering produces. Block-level
+citations map onto `blockquote`, which is why that one is wired; inline citation
+chips, app blocks and file chips (PDF, Markdown, CSS, JSON) have no known
+selector.
+
+To find out what they actually are, quote a source and attach a file, then paste:
+
+```js
+(() => {
+  const S = '[data-message-author-role="assistant"]';
+  const cls = e => (e.getAttribute('class') || '').slice(0, 120);
+  const dump = (label, els) => [...els].slice(0, 6).forEach(e =>
+    console.log(label, '<' + e.tagName.toLowerCase() + '>',
+      JSON.stringify(Object.fromEntries([...e.attributes].map(a => [a.name, a.value.slice(0, 60)]))),
+      '| text:', (e.textContent || '').trim().slice(0, 40)));
+  dump('LINK  ', document.querySelectorAll(S + ' .markdown a'));
+  dump('CITE? ', document.querySelectorAll(S + ' [class*="citation"], ' + S + ' [data-testid*="cite"], ' + S + ' sup, ' + S + ' cite'));
+  dump('CHIP? ', document.querySelectorAll(S + ' [class*="attach"], ' + S + ' [data-testid*="file"], ' + S + ' [class*="chip"]'));
+})()
+```
+
+Anything that comes back with a stable attribute naming the type is enough to wire
+the remaining five tints. Anything that does not is a category ChatGPT does not
+model, and the palette entry stays unused rather than being attached to a guess.
 
 ## No theme hooks
 

@@ -1,4 +1,4 @@
-# DenseGPT
+﻿# DenseGPT
 
 **Make ChatGPT denser, calmer and easier to scan — both visually and linguistically.**
 
@@ -42,11 +42,13 @@ Spacing is not configurable. Every value is fixed and verified by eye on real
 output — no density slider, no scalar, no calc. They are listed in full in
 [`docs/design-principles.md`](docs/design-principles.md).
 
-**One set of tokens.** Every colour in the file comes from three
-`color-mix(… currentColor …)` tokens — `--dg-surface-soft` for inline code,
-`--dg-surface-block` and `--dg-edge` for the blockquote. There are no literal
-colour values anywhere, so there is no second grey and no colour cast between
-elements.
+**One set of tokens.** Two inks and four surfaces, all anchored to `currentColor`:
+`--dg-surface-soft` (inline code), `--dg-surface-block` and `--dg-edge`
+(blockquote), `--dg-edge-soft` (horizontal rule). A category is separated by
+shifting the same ink a few percent toward a desaturated hue — never by giving it
+a colour of its own — so a quoted source reads differently from a piece of code
+while both still read grey. Surfaces stay at 5–6% alpha, edges at 18–35%, and
+there is exactly one literal colour in the file: the hue anchor.
 
 **Light and dark are inherited, untouched.** No theme detection of any kind, and
 no rule for `html`, `body` or `:root`. Fenced code blocks are not touched at all —
@@ -70,7 +72,7 @@ background · `"explain in detail"` overrides everything.
 ## Structure
 
 ```
-densegpt.user.css          the whole visual layer, 162 lines
+densegpt.user.css          the whole visual layer, 199 lines
 STYLE.md                   response spec
 presets/                   per-tool paste blocks
 docs/design-principles.md  the density model, and what is never compressed
