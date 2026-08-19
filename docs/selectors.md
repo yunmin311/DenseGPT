@@ -32,6 +32,22 @@ that declaration comes from a Tailwind arbitrary property
 (`[--thread-content-max-width:32rem]`) or from a plain rule in ChatGPT's own
 stylesheet. That shadowing is what a `:root`-only override misses.
 
+### Shrinking it safely
+
+`*` is the fallback for not knowing where the variable is redeclared. The width
+section of the dump below answers that, and the answer picks the selector
+mechanically:
+
+| Dump says | Use | Why |
+| --- | --- | --- |
+| redeclared on 0 elements | `:root { … }` | nothing to shadow it; inheritance reaches everything |
+| redeclared, all `[in main]`, composer in main | `main, main * { … }` | covers every redeclaration and all three columns |
+| any redeclaration `[OUTSIDE main]`, or composer outside main | keep `*` | no smaller root contains all three columns |
+
+Do not shrink it on the assumption that the composer lives inside `main`. If that
+is wrong, the composer stops tracking the message column and the centre axis
+breaks — which is the one thing content width exists to prevent.
+
 Everything that reads the variable moves together — assistant messages, user
 messages, composer — **as long as it reads the variable**. Anything that hard-codes
 a literal `max-width` instead is out of reach, and no amount of guessing at class
@@ -110,25 +126,47 @@ citations map onto `blockquote`, which is why that one is wired; inline citation
 chips, app blocks and file chips (PDF, Markdown, CSS, JSON) have no known
 selector.
 
-To find out what they actually are, quote a source and attach a file, then paste:
+### Finding out, without guessing
+
+The dump below asks no questions about class names. It prints every semantic
+attribute — `data-*`, `aria-*`, `href`, `download`, `type`, `role` — on every
+element inside one assistant turn. Whatever hooks exist will be in the output;
+whatever is missing is missing.
+
+Produce a turn that contains all three targets first: ask ChatGPT something that
+makes it cite a web source, attach a PDF and a `.json` or `.css` file to the
+conversation, and use an app/connector block if you have one. Then paste:
 
 ```js
 (() => {
-  const S = '[data-message-author-role="assistant"]';
-  const cls = e => (e.getAttribute('class') || '').slice(0, 120);
-  const dump = (label, els) => [...els].slice(0, 6).forEach(e =>
-    console.log(label, '<' + e.tagName.toLowerCase() + '>',
-      JSON.stringify(Object.fromEntries([...e.attributes].map(a => [a.name, a.value.slice(0, 60)]))),
-      '| text:', (e.textContent || '').trim().slice(0, 40)));
-  dump('LINK  ', document.querySelectorAll(S + ' .markdown a'));
-  dump('CITE? ', document.querySelectorAll(S + ' [class*="citation"], ' + S + ' [data-testid*="cite"], ' + S + ' sup, ' + S + ' cite'));
-  dump('CHIP? ', document.querySelectorAll(S + ' [class*="attach"], ' + S + ' [data-testid*="file"], ' + S + ' [class*="chip"]'));
+  const a = document.querySelector('[data-message-author-role="assistant"]');
+  const turn = (a && a.closest('article')) || document.querySelector('main');
+  const rows = [];
+  const keep = n => n.startsWith('data-') || n.startsWith('aria-') ||
+    ['href', 'download', 'type', 'role', 'title', 'alt'].includes(n);
+  turn.querySelectorAll('*').forEach(e => {
+    const at = [...e.attributes].filter(x => keep(x.name));
+    if (at.length) rows.push('<' + e.tagName.toLowerCase() + '> ' +
+      at.map(x => x.name + '="' + x.value.slice(0, 70) + '"').join(' ') +
+      '  | ' + (e.textContent || '').trim().slice(0, 40));
+  });
+  console.log('=== SEMANTIC ATTRIBUTES IN ONE ASSISTANT TURN ===\n' + rows.join('\n'));
+
+  const gv = e => getComputedStyle(e).getPropertyValue('--thread-content-max-width').trim();
+  const re = [...document.querySelectorAll('*')].filter(e => e.parentElement && gv(e) !== gv(e.parentElement));
+  console.log('=== WIDTH ===\nredeclared on ' + re.length + ' element(s): ' +
+    re.map(e => e.tagName.toLowerCase() + '=' + gv(e) + (document.querySelector('main').contains(e) ? ' [in main]' : ' [OUTSIDE main]')).join(', '));
+  console.log('composer inside main: ' + !!document.querySelector('main form'));
 })()
 ```
 
-Anything that comes back with a stable attribute naming the type is enough to wire
-the remaining five tints. Anything that does not is a category ChatGPT does not
-model, and the palette entry stays unused rather than being attached to a guess.
+**Run it with DenseGPT disabled** — our own `*` rule sets the width variable on
+every element, which makes the redeclaration count read as zero.
+
+A type is wirable only if the output shows an attribute that *names* the type on a
+stable element. A class name, a position, or the visible filename text is not a
+hook: `nth-child`, text matching and guessed classes are all banned, so a category
+with no attribute stays unimplemented rather than faked.
 
 ## No theme hooks
 
