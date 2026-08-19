@@ -22,7 +22,7 @@
 @-moz-document domain("chatgpt.com") {
 
 /* =====================================================================
-   DenseGPT 1.3.0
+   DenseGPT
 
    Scope for everything except content width:
        [data-message-author-role="assistant"] .markdown
