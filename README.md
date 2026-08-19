@@ -34,19 +34,25 @@ One variable, content width:
 | Full | `none` | |
 
 Auto replaces the Widescreen extension: 72% of viewport width, floored at 48rem,
-capped at 78rem. It is applied through ChatGPT's own `--thread-content-max-width`
-property so the message column and the composer move together.
+capped at 78rem, re-evaluated live as the window is resized or zoomed. It is
+applied through ChatGPT's own `--thread-content-max-width` property, so everything
+that reads it — messages and composer — moves together on one centre axis.
 
-Spacing is not configurable. Seven rules, every value fixed and verified by eye on
-real output — no density slider, no scalar, no calc. They are listed in full in
+Spacing is not configurable. Every value is fixed and verified by eye on real
+output — no density slider, no scalar, no calc. They are listed in full in
 [`docs/design-principles.md`](docs/design-principles.md).
 
-**Light and dark are inherited, untouched.** No theme detection of any kind, no
-`color-mix`, no derived colour, and nothing that sets page background, body text
-colour or `color-scheme`. The only `:root` declaration in the file is the width
-variable. Fenced code blocks are not touched at all — background, colours, font
-size and syntax highlighting stay exactly as ChatGPT ships them. Sidebar and
-buttons are not styled; the composer is affected only by width.
+**One set of tokens.** Every colour in the file comes from three
+`color-mix(… currentColor …)` tokens — `--dg-surface-soft` for inline code,
+`--dg-surface-block` and `--dg-edge` for the blockquote. There are no literal
+colour values anywhere, so there is no second grey and no colour cast between
+elements.
+
+**Light and dark are inherited, untouched.** No theme detection of any kind, and
+no rule for `html`, `body` or `:root`. Fenced code blocks are not touched at all —
+background, colours, font size and syntax highlighting stay exactly as ChatGPT
+ships them. Sidebar, links, tables and buttons are not styled; the composer is
+affected only by width.
 
 ## Install — response layer
 
@@ -64,7 +70,7 @@ background · `"explain in detail"` overrides everything.
 ## Structure
 
 ```
-densegpt.user.css          the whole visual layer, 117 lines
+densegpt.user.css          the whole visual layer, 162 lines
 STYLE.md                   response spec
 presets/                   per-tool paste blocks
 docs/design-principles.md  the density model, and what is never compressed
@@ -81,6 +87,17 @@ distinguishable at a glance. Anything that fails that is a regression, however
 much it tightens the page.
 
 ## Status
+
+**1.3.0 — one token set, a full blockquote reset, and width on a hook that cannot
+be shadowed.** Three literal slate blues are gone, replaced by three
+`currentColor` tokens. The blockquote now clears ChatGPT's borders, box-shadow,
+background image, generated quote marks and inherited indent before drawing its
+own single left rule. Content width moved from three class-matched rules to one
+universal-selector override of `--thread-content-max-width`.
+
+Unconfirmed, both answered by the console check in
+[`docs/selectors.md`](docs/selectors.md): the true source of the blockquote double
+line, and which columns the width rule actually reaches.
 
 **1.2.0 — minimum rollback to the verified baseline, plus Auto width.**
 

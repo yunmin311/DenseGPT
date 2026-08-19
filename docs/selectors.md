@@ -1,11 +1,11 @@
 # Selectors
 
-ChatGPT ships Tailwind utility classes that change without notice. Ten selectors
-exist in the whole stylesheet. This is all of them.
+Twelve rules in the whole stylesheet. This is all of them, and how to verify the
+two that are not yet confirmed against a live DOM.
 
-## Spacing — seven rules
+## Spacing, tokens, inline code, blockquote
 
-Every one is the same scope plus a plain HTML element:
+Every rule is the same scope plus a plain HTML element:
 
 ```css
 [data-message-author-role="assistant"] .markdown
@@ -13,82 +13,114 @@ Every one is the same scope plus a plain HTML element:
 
 | Hook | Stability | If it breaks |
 | --- | --- | --- |
-| `[data-message-author-role="assistant"]` | High. Semantic data attribute, unchanged across years of redesigns. | All spacing stops applying. One-line fix, below. |
+| `[data-message-author-role="assistant"]` | High. Semantic data attribute, unchanged across years of redesigns. | Everything except width stops applying. One-line fix: find and replace the scope string. |
 | `.markdown` | High. Named for its purpose, not its styling. | Same. |
 | `p`, `h2`, `h3`, `ul`, `ol`, `li`, `code`, `blockquote` | Maximum. Plain HTML. | Cannot break. |
 | `:not(pre) > code` | Maximum. Structural. | Cannot break. |
+| `blockquote::before/::after`, `blockquote p::before/::after` | Maximum. | Cannot break. |
 
-If the whole style stops working, ChatGPT renamed the scope. Find and replace that
-one string across `densegpt.user.css`. That is the entire repair.
-
-## Content width — three rules
+## Content width — one rule
 
 ```css
-:root                                              { --thread-content-max-width: … }
-[class*="--thread-content-max-width:"]             { --thread-content-max-width: … }
-[class*="max-w-(--thread-content-max-width)"],
-[class*="max-w-[var(--thread-content-max-width)]"] { max-width: … }
+* { --thread-content-max-width: <value> !important; }
 ```
 
-The primary hook is ChatGPT's own `--thread-content-max-width` custom property, set
-at the document root so it inherits down to everything that consumes it — message
-column and composer alike. That is the stable half.
+The universal selector is not a guess about the DOM — it is the only selector that
+cannot miss. ChatGPT's own `--thread-content-max-width` is the hook; `!important`
+means an element that declares the variable **on itself** cannot shadow it, whether
+that declaration comes from a Tailwind arbitrary property
+(`[--thread-content-max-width:32rem]`) or from a plain rule in ChatGPT's own
+stylesheet. That shadowing is what a `:root`-only override misses.
 
-The other two exist because inheritance alone is not enough:
+Everything that reads the variable moves together — assistant messages, user
+messages, composer — **as long as it reads the variable**. Anything that hard-codes
+a literal `max-width` instead is out of reach, and no amount of guessing at class
+names will fix it; the check below reports which.
 
-- An element that declares the variable **on itself** (Tailwind arbitrary property,
-  `[--thread-content-max-width:32rem]`) shadows the inherited value. Rule 2
-  overrides that declaration where it is made.
-- An element that reads the variable into `max-width` needs the value applied
-  directly if it computed before ours landed. Rule 3 covers that.
+## Console check
 
-Both are matched by the **variable name**, not by a styling class, so they survive
-Tailwind churn as long as the variable itself keeps its name.
+Open a conversation that contains a blockquote, press Ctrl+Shift+J, paste this.
 
-**Status: unverified against a live DOM.** Confirm what they actually hit:
+**Run it once with DenseGPT disabled** — that is the run that shows what ChatGPT
+itself draws. Our `!important` reset masks the original source otherwise. Then run
+it again with the style enabled to confirm the fix.
 
 ```js
-// 1. does ChatGPT define the variable at all?
-getComputedStyle(document.documentElement).getPropertyValue('--thread-content-max-width')
-
-// 2. which elements declare or consume it?
-document.querySelectorAll('[class*="thread-content-max-width"]').length
-
-// 3. what is the message column and the composer actually clamped to?
-getComputedStyle(document.querySelector('[data-message-author-role="assistant"]').closest('article').firstElementChild).maxWidth
-getComputedStyle(document.querySelector('main form')).maxWidth
+(() => {
+  const S = '[data-message-author-role="assistant"] .markdown';
+  const R = [], px = v => v && v !== '0px' && v !== 'none' && v !== 'normal';
+  const cls = e => (e.getAttribute('class') || '').slice(0, 110);
+  const bq = document.querySelector(S + ' blockquote');
+  if (!bq) R.push('BLOCKQUOTE: none on screen - ask ChatGPT to quote something first');
+  else {
+    const c = getComputedStyle(bq);
+    R.push('BLOCKQUOTE <' + bq.tagName.toLowerCase() + '> class="' + cls(bq) + '"');
+    ['left', 'right', 'top', 'bottom'].forEach(s => px(c['border' + s[0].toUpperCase() + s.slice(1) + 'Width'])
+      && R.push('  border-' + s + ': ' + c['border' + s[0].toUpperCase() + s.slice(1) + 'Width'] + ' ' + c['border' + s[0].toUpperCase() + s.slice(1) + 'Color']));
+    if (px(c.boxShadow)) R.push('  box-shadow: ' + c.boxShadow);
+    R.push('  bg: ' + c.backgroundColor + ' | bg-image: ' + c.backgroundImage);
+    R.push('  padding: ' + c.padding + ' | margin: ' + c.margin + ' | text-indent: ' + c.textIndent);
+    ['::before', '::after'].forEach(p => { const s = getComputedStyle(bq, p);
+      if (s.content !== 'none') R.push('  ' + p + ' content:' + s.content + ' w:' + s.width + ' bg:' + s.backgroundColor + ' border-left:' + s.borderLeftWidth); });
+    bq.querySelectorAll('*').forEach(el => { const s = getComputedStyle(el), h = [];
+      if (px(s.borderLeftWidth)) h.push('border-left ' + s.borderLeftWidth + ' ' + s.borderLeftColor);
+      if (px(s.boxShadow)) h.push('box-shadow ' + s.boxShadow);
+      if (px(s.marginLeft)) h.push('margin-left ' + s.marginLeft);
+      if (px(s.paddingLeft)) h.push('padding-left ' + s.paddingLeft);
+      ['::before', '::after'].forEach(p => { const ps = getComputedStyle(el, p);
+        if (ps.content !== 'none') h.push(p + ' ' + ps.content + ' w:' + ps.width + ' bg:' + ps.backgroundColor); });
+      if (h.length) R.push('  CHILD <' + el.tagName.toLowerCase() + '> ' + h.join(' | ') + ' class="' + cls(el) + '"'); });
+  }
+  const gv = e => getComputedStyle(e).getPropertyValue('--thread-content-max-width').trim();
+  R.push('WIDTH  root --thread-content-max-width: ' + (gv(document.documentElement) || '(unset)'));
+  const re = [...document.querySelectorAll('*')].filter(e => e.parentElement && gv(e) !== gv(e.parentElement));
+  R.push('  elements redeclaring it: ' + re.length);
+  re.slice(0, 8).forEach(e => R.push('   <' + e.tagName.toLowerCase() + '> ' + gv(e) + ' class="' + cls(e) + '"'));
+  const show = (l, e) => R.push('  ' + l + ': ' + (e ? getComputedStyle(e).maxWidth + ' / actual ' + Math.round(e.getBoundingClientRect().width) + 'px class="' + cls(e) + '"' : 'not found'));
+  const a = document.querySelector('[data-message-author-role="assistant"]');
+  const u = document.querySelector('[data-message-author-role="user"]');
+  show('assistant col', a && a.closest('article') && a.closest('article').firstElementChild);
+  show('user col', u && u.closest('article') && u.closest('article').firstElementChild);
+  show('composer', document.querySelector('main form'));
+  R.push('  --user-chat-width: ' + (getComputedStyle(document.documentElement).getPropertyValue('--user-chat-width').trim() || '(unset)'));
+  console.log(R.join('\n'));
+})()
 ```
 
-A zero on 2 with a value on 1 means the variable is set somewhere other than the
-element carrying the class — report the numbers rather than guessing at new
-selectors.
+What each line answers:
+
+| Output | Question |
+| --- | --- |
+| `border-*` on BLOCKQUOTE | is the second line a border on the element itself |
+| `box-shadow` on BLOCKQUOTE | is it an inset shadow pretending to be a border |
+| `::before` / `::after` with content | is it a pseudo-element bar, or a quote glyph |
+| `CHILD <…> border-left` | is it drawn by an inner element — the one case the reset cannot reach |
+| `padding-left` / `margin-left` on child | the real source of the horizontal offset |
+| `elements redeclaring it` | where `--thread-content-max-width` is actually overridden |
+| `assistant col` / `user col` / `composer` | which of the three the width rule actually reaches |
+| `--user-chat-width` | whether user bubbles are sized by a separate variable |
 
 ## No theme hooks
 
-Deliberately none. No `html.dark`, no `[data-theme]`, no `prefers-color-scheme`, no
-`color-mix`, no `currentColor` arithmetic. Both tints are literal `rgba()` values
-chosen to read over either background.
-
-The single `:root` rule in the file sets **one custom property** — the content
-width — and nothing else. Grep before every release:
+Deliberately none. No `html.dark`, no `[data-theme]`, no `prefers-color-scheme`.
+There is no rule for `html`, `body` or `:root`. Every colour in the file is one of
+the three tokens, all mixed from `currentColor`. Grep before every release:
 
 ```
-prefers-color-scheme     →  no matches
-color-scheme\s*:         →  no matches
-html\.|data-theme        →  no matches
-currentColor|color-mix   →  no matches
-^\s*(html|body)          →  no matches
-^\s*:root                →  exactly one, the width variable
+prefers-color-scheme    →  no matches
+color-scheme\s*:        →  no matches
+html\.|data-theme       →  no matches
+rgba?\(|#[0-9a-f]{3,8}  →  no matches (three color-mix tokens only)
 ```
 
 ## Deliberate non-targets
 
-Not touched: sidebar, top bar, model picker, message action buttons, canvas, user
-messages, and fenced code blocks (background, colours, font size and syntax
-highlighting all stay ChatGPT's). The composer is affected only by content width,
-which is the point — a wide message column above a narrow composer looks broken.
+Not touched: sidebar, top bar, model picker, message action buttons, canvas, links,
+tables, bold, and fenced code blocks — background, colours, font size and syntax
+highlighting all stay ChatGPT's. The composer is affected only by content width.
 
 ## Status
 
-v1.2.0. Scope and element selectors held up in live testing. The three width rules
-are new and unconfirmed; run the console checks above before filing a width bug.
+v1.3.0. Scope and spacing selectors are confirmed by live testing. Two things are
+unconfirmed and both are answered by the console check above: the true source of
+the blockquote double line, and which columns the width rule reaches.
