@@ -1,0 +1,246 @@
+/* ==UserStyle==
+@name           DenseGPT
+@namespace      github.com/yunmin311/DenseGPT
+@version        1.0.0
+@description    Make ChatGPT denser, calmer and easier to scan. Tightens the rhythm of assistant markdown without flattening its semantic hierarchy.
+@author         yunmin311
+@license        MIT
+@homepageURL    https://github.com/yunmin311/DenseGPT
+@supportURL     https://github.com/yunmin311/DenseGPT/issues
+@updateURL      https://raw.githubusercontent.com/yunmin311/DenseGPT/main/densegpt.user.css
+@preprocessor   default
+
+@var select density "Density" {
+  "Balanced": "1",
+  "Dense*": "0.72",
+  "Ultra Dense": "0.5"
+}
+
+@var select content_width "Content width" {
+  "Narrow (40rem)": "40rem",
+  "Reading (46rem)*": "46rem",
+  "Wide (54rem)": "54rem",
+  "Full width": "none"
+}
+
+@var select inline_code "Inline code" {
+  "Soft (light fill)*": "6%",
+  "Minimal (no fill)": "0%"
+}
+==/UserStyle== */
+
+@-moz-document domain("chatgpt.com") {
+
+/* =====================================================================
+   DenseGPT - assistant markdown only.
+   Scope selector used by every rhythm rule below:
+       [data-message-author-role="assistant"] .markdown
+   Change that one pair of selectors if ChatGPT renames things.
+   See docs/selectors.md.
+   ===================================================================== */
+
+/* --- tokens ---------------------------------------------------------- */
+
+:root {
+  /* density scalar: 1 = Balanced, 0.72 = Dense, 0.5 = Ultra Dense */
+  --dg-d: /*[[density]]*/;
+
+  /* headings compress slower than body copy, so hierarchy survives Ultra */
+  --dg-dh: calc(0.45 + 0.55 * var(--dg-d));
+
+  --dg-cw: /*[[content_width]]*/;
+  --dg-icode: /*[[inline_code]]*/;
+
+  --dg-lh: calc(1.42 + 0.30 * var(--dg-d));       /* 1.72 / 1.64 / 1.57 */
+  --dg-lh-code: calc(1.40 + 0.15 * var(--dg-d));  /* 1.55 / 1.51 / 1.48 */
+
+  /* light theme */
+  --dg-quote-line: #64748b;
+  --dg-quote-bg: color-mix(in srgb, #64748b 8%, transparent);
+}
+
+html.dark,
+html[data-theme="dark"] {
+  --dg-quote-line: #8b98ab;
+  --dg-quote-bg: color-mix(in srgb, #94a3b8 12%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light):not([data-theme="light"]) {
+    --dg-quote-line: #8b98ab;
+    --dg-quote-bg: color-mix(in srgb, #94a3b8 12%, transparent);
+  }
+}
+
+/* --- block rhythm ---------------------------------------------------- */
+
+[data-message-author-role="assistant"] .markdown {
+  line-height: var(--dg-lh);
+}
+
+[data-message-author-role="assistant"] .markdown > :first-child {
+  margin-top: 0;
+}
+
+[data-message-author-role="assistant"] .markdown > :last-child {
+  margin-bottom: 0;
+}
+
+[data-message-author-role="assistant"] .markdown p {
+  margin-block: calc(0.90em * var(--dg-d));
+}
+
+/* --- headings -------------------------------------------------------- */
+
+[data-message-author-role="assistant"] .markdown h1 {
+  margin-block: calc(1.50em * var(--dg-dh)) calc(0.55em * var(--dg-dh));
+  line-height: 1.25;
+}
+
+[data-message-author-role="assistant"] .markdown h2 {
+  margin-block: calc(1.45em * var(--dg-dh)) calc(0.50em * var(--dg-dh));
+  line-height: 1.30;
+}
+
+[data-message-author-role="assistant"] .markdown h3 {
+  margin-block: calc(1.15em * var(--dg-dh)) calc(0.40em * var(--dg-dh));
+  line-height: 1.35;
+}
+
+[data-message-author-role="assistant"] .markdown :is(h4, h5, h6) {
+  margin-block: calc(1.00em * var(--dg-dh)) calc(0.30em * var(--dg-dh));
+  line-height: 1.40;
+}
+
+/* stacked headings must not double their gap */
+[data-message-author-role="assistant"] .markdown
+  :is(h1, h2, h3, h4, h5, h6) + :is(h1, h2, h3, h4, h5, h6) {
+  margin-top: calc(0.60em * var(--dg-dh));
+}
+
+/* --- lists ----------------------------------------------------------- */
+
+[data-message-author-role="assistant"] .markdown :is(ul, ol) {
+  margin-block: calc(0.80em * var(--dg-d));
+  padding-inline-start: calc(1.45em * var(--dg-dh));
+}
+
+[data-message-author-role="assistant"] .markdown li {
+  margin-block: calc(0.35em * var(--dg-d));
+}
+
+[data-message-author-role="assistant"] .markdown li > p {
+  margin-block: calc(0.30em * var(--dg-d));
+}
+
+[data-message-author-role="assistant"] .markdown li > :first-child {
+  margin-top: 0;
+}
+
+[data-message-author-role="assistant"] .markdown li > :last-child {
+  margin-bottom: 0;
+}
+
+[data-message-author-role="assistant"] .markdown :is(ul, ol) :is(ul, ol) {
+  margin-block: calc(0.30em * var(--dg-d));
+}
+
+/* --- inline code ------------------------------------------------------
+   `:not(pre) > code` is the guard that keeps code blocks out of this rule.
+   The fill is mixed from currentColor, so it adapts to light and dark on
+   its own and never turns code into coloured text.
+   -------------------------------------------------------------------- */
+
+[data-message-author-role="assistant"] .markdown :not(pre) > code {
+  background-color: color-mix(in srgb, currentColor var(--dg-icode), transparent);
+  border-radius: 4px;
+  padding: 0.10em 0.28em;
+  font-size: 0.90em;
+  color: inherit;
+}
+
+/* --- code blocks ----------------------------------------------------- */
+
+[data-message-author-role="assistant"] .markdown pre {
+  margin-block: calc(1.00em * var(--dg-d));
+}
+
+[data-message-author-role="assistant"] .markdown pre code {
+  line-height: var(--dg-lh-code);
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* structural, not class-based: the wrapper that directly holds <code> */
+[data-message-author-role="assistant"] .markdown pre div:has(> code) {
+  padding: calc(0.85rem * var(--dg-d) + 0.15rem) 0.90rem;
+}
+
+/* --- blockquote ------------------------------------------------------ */
+
+[data-message-author-role="assistant"] .markdown blockquote {
+  margin-block: calc(1.00em * var(--dg-d));
+  padding: calc(0.55em * var(--dg-d) + 0.10em) 0.90em;
+  border-inline-start: 3px solid var(--dg-quote-line);
+  border-radius: 6px;
+  background-color: var(--dg-quote-bg);
+  color: inherit;
+  font-style: normal;
+}
+
+[data-message-author-role="assistant"] .markdown blockquote > :first-child {
+  margin-top: 0;
+}
+
+[data-message-author-role="assistant"] .markdown blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+/* Tailwind Typography injects quote marks; DenseGPT uses the rule instead */
+[data-message-author-role="assistant"] .markdown blockquote p::before,
+[data-message-author-role="assistant"] .markdown blockquote p::after {
+  content: none;
+}
+
+/* --- tables, rules, math --------------------------------------------- */
+
+[data-message-author-role="assistant"] .markdown table {
+  margin-block: calc(1.00em * var(--dg-d));
+}
+
+[data-message-author-role="assistant"] .markdown :is(th, td) {
+  padding: calc(0.42em * var(--dg-d) + 0.08em) 0.70em;
+  line-height: 1.45;
+}
+
+[data-message-author-role="assistant"] .markdown hr {
+  margin-block: calc(1.50em * var(--dg-dh));
+}
+
+[data-message-author-role="assistant"] .markdown .katex-display {
+  margin-block: calc(1.00em * var(--dg-d));
+}
+
+/* --- content width ---------------------------------------------------
+   The only rule that touches page layout, and the first thing to break
+   if ChatGPT reworks its shell. It matches the element that carries the
+   --thread-content-max-width custom property, in all three Tailwind
+   spellings. If it stops matching, nothing else in this file is affected.
+   -------------------------------------------------------------------- */
+
+main article div[class*="--thread-content-max-width:"],
+main article div[class*="max-w-(--thread-content-max-width)"],
+main article div[class*="max-w-[var(--thread-content-max-width)]"] {
+  --thread-content-max-width: var(--dg-cw) !important;
+  max-width: var(--dg-cw) !important;
+}
+
+/* Fallback if the selectors above match nothing. Uncomment to use. */
+/*
+main article > div > div {
+  max-width: var(--dg-cw) !important;
+}
+*/
+
+}
