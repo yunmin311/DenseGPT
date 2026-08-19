@@ -138,38 +138,88 @@ A full-thread dump of every `data-*`, `aria-*`, `href`, `download`, `type`, `rol
 | `data-turn` | `<section>` | `"user"` / `"assistant"` — a second scope hook if the first is ever dropped |
 | `data-turn-id`, `data-testid="conversation-turn-N"` | `<section>` | |
 | `data-turn-id-container`, `data-is-intersecting` | virtualisation wrappers | scroll bookkeeping, not styling hooks |
-| `data-testid="copy-turn-action-button"` etc. | action buttons | deliberate non-targets |
-| `alt`, `aria-label` on image attachments | `<img>`, its `<button>` | carries the **filename**, e.g. `alt="…​.png"` |
+| `data-message-model-slug` | same element | e.g. `gpt-5-6-thinking` |
+| `data-turn-start-message` | same element | |
+| `data-start`, `data-end` | **every** rendered markdown node | source offsets from the markdown renderer, on `p`, `strong`, `code`, `li`, `blockquote`… |
+| `data-is-last-node`, `data-is-only-node` | last markdown node | |
+| `data-testid="copy-turn-action-button"`, `"feedback-turn-action-button"` | action buttons | deliberate non-targets |
+| `alt`, `aria-label` on image attachments | `<img>`, its `<button>` | carries the **filename**, e.g. `alt="….png"` |
 
 Turns are `<section>`, **not `<article>`** — a `closest('article')` lookup returns
 null on the current build.
 
-What the dump did **not** contain: any web citation, any non-image file
-attachment, any app/connector block. The thread had none, so nothing about their
-markup is known.
+`data-start` / `data-end` are the useful discovery lever, not a styling hook: an
+ordinary markdown node carries *only* those two. So "every element that has an
+attribute other than `data-start`/`data-end`" is an exact, guess-free filter for
+everything that is not ordinary markdown — which is what the probes below use.
 
-### Still needed
+What two live dumps did **not** contain: any web citation, any non-image file
+attachment, any app/connector block. Nothing about their markup is known.
 
-Produce one assistant turn that actually contains the three targets — ask
-something that makes ChatGPT cite a web source, attach a PDF and a `.json` or
-`.css` file, use an app/connector block if you have one — then paste this. It
-scopes to a single turn so the output is not truncated:
+### Still needed — three separate probes
+
+The three targets live in three different places, so one script cannot find them.
+Attachments are **not** in the assistant turn: a file the user uploads renders in
+the *user* turn. Each probe below prints every element carrying any attribute
+other than `data-start`/`data-end` — everything that is not ordinary markdown, and
+nothing that has to be guessed at.
+
+**A — Citation.** Needs an assistant turn that actually cites the web: ask
+something that forces a search, wait for the answer to render its sources, then:
 
 ```js
 (() => {
   const a = [...document.querySelectorAll('[data-message-author-role="assistant"]')].pop();
-  const turn = (a && (a.closest('section[data-turn]') || a.closest('[data-turn-id]'))) || a;
-  if (!turn) return console.log('no assistant turn found');
-  const keep = n => n.startsWith('data-') || n.startsWith('aria-') ||
-    ['href', 'download', 'type', 'role', 'title', 'alt'].includes(n);
+  const turn = a && (a.closest('section[data-turn]') || a);
+  if (!turn) return console.log('no assistant turn');
+  const rows = [];
+  (turn.querySelector('.markdown') || turn).querySelectorAll('*').forEach(e => {
+    const at = [...e.attributes].filter(x => x.name !== 'data-start' && x.name !== 'data-end');
+    if (at.length) rows.push('<' + e.tagName.toLowerCase() + '> ' +
+      at.map(x => x.name + '="' + x.value.slice(0, 90) + '"').join(' ') +
+      '  | ' + (e.textContent || '').trim().slice(0, 50));
+  });
+  console.log('=== A. CITATION (assistant markdown) ===\n' + (rows.join('\n') || 'nothing but plain markdown - this answer cites no sources'));
+})()
+```
+
+**B — Attachment.** Send one message with a PDF and a `.json` or `.css` attached,
+then run this. It reads the **latest user turn**:
+
+```js
+(() => {
+  const u = [...document.querySelectorAll('[data-message-author-role="user"]')].pop();
+  const turn = u && (u.closest('section[data-turn]') || u);
+  if (!turn) return console.log('no user turn');
   const rows = [];
   turn.querySelectorAll('*').forEach(e => {
-    const at = [...e.attributes].filter(x => keep(x.name));
+    const at = [...e.attributes].filter(x => x.name !== 'data-start' && x.name !== 'data-end');
     if (at.length) rows.push('<' + e.tagName.toLowerCase() + '> ' +
-      at.map(x => x.name + '="' + x.value.slice(0, 70) + '"').join(' ') +
-      '  | ' + (e.textContent || '').trim().slice(0, 40));
+      at.map(x => x.name + '="' + x.value.slice(0, 90) + '"').join(' ') +
+      '  | ' + (e.textContent || '').trim().slice(0, 50));
   });
-  console.log('=== ONE ASSISTANT TURN ===\n' + rows.join('\n'));
+  console.log('=== B. ATTACHMENT (latest user turn) ===\n' + rows.join('\n'));
+})()
+```
+
+**C — App / Connector.** Run with an app or connector block on screen. This is an
+inventory rather than a dump, so the output stays short: every distinct
+`data-testid`, every `role`, and every `data-*` attribute name inside `main`, with
+counts. An app block will appear as a testid that is not one of the known
+`*-turn-action-button` entries:
+
+```js
+(() => {
+  const tally = (sel, get) => { const m = {};
+    document.querySelectorAll(sel).forEach(e => { const v = get(e); if (v) m[v] = (m[v] || 0) + 1; });
+    return Object.entries(m).sort((x, y) => y[1] - x[1]).map(([k, v]) => v + '  ' + k).join('\n'); };
+  const names = {};
+  document.querySelectorAll('main *').forEach(e => [...e.attributes].forEach(a => {
+    if (a.name.startsWith('data-')) names[a.name] = (names[a.name] || 0) + 1; }));
+  console.log('=== C1. data-testid ===\n' + tally('[data-testid]', e => e.getAttribute('data-testid')));
+  console.log('=== C2. role ===\n' + tally('[role]', e => e.getAttribute('role')));
+  console.log('=== C3. data-* names in main ===\n' +
+    Object.entries(names).sort((x, y) => y[1] - x[1]).map(([k, v]) => v + '  ' + k).join('\n'));
 })()
 ```
 
