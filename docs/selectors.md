@@ -172,33 +172,50 @@ selector on an ARIA attribute, not text matching, and `role="group"` disambiguat
 the tile root from the `button` inside it and from the message-action groups,
 which also use `role="group"` but never end in a file extension.
 
-All three are implemented: citation, `.pdf` / `.md` / `.markdown` / `.css` /
-`.json` tiles, and the app block. Untyped files get no tint.
+Implemented: citation, and `.pdf` / `.md` / `.markdown` / `.css` / `.json` tiles.
+Untyped files get no tint. **The app block is not implemented and cannot be.**
 
-### The app block, measured
+### Citation: the testid is not the painted surface
 
-`[data-app-block-preview="true"]` is a real block, not portal scaffolding —
-`display: block`, 647 × 148 at the time of the dump, inside the message column. But
-it is a **layout wrapper**, not the painted surface:
+A 35% debug pass outlined the pill but produced no visible tint, which ruled out
+the alpha. The subtree says why:
 
-```html
-<div class="group/app-block-preview not-prose mt-4 mb-1 w-full overflow-visible"
-     data-app-block-preview="true">
-  …
-      <div class="relative flex h-full w-full" style="height: 72px;">
-        <div class="absolute inset-0 … bg-token-main-surface-primary …">
+```
+<span data-testid="webpage-citation-pill">  108x18  bg transparent
+  <a>                                       107x18  bg rgb(244,244,244)
+                                            OPAQUE, radius 12px, overflow-hidden
 ```
 
-The card is 72px tall inside a 148px wrapper, so tinting the wrapper would paint a
-band larger than the card. The paint has to land on the element carrying
-`bg-token-main-surface-primary`.
+The testid sits on a transparent layout shell; the `<a>` inside paints the pill and
+covers the shell edge to edge. The rule targets `…pill a` — same anchor, one step
+down. This is the general shape of the problem: **a confirmed hook is not
+automatically a paint target.**
 
-That is a class match, and it is the one in the file — deliberately. It is
-ChatGPT's own **semantic surface token**, not a layout utility like `mt-4`, and the
-selector is confined to the `[data-app-block-preview]` subtree so it cannot leak.
-Nested surfaces are opaque, so the topmost covers those below and tints never
-accumulate. If ChatGPT renames its surface tokens this one rule stops tinting and
-nothing else is affected.
+### App block: a cross-document iframe
+
+```
+[data-app-block-preview]                 640x148  transparent
+  …
+    div.bg-token-main-surface-primary     648x80  OPAQUE
+      iframe                              648x80  fills it exactly
+```
+
+The surface div does receive the tint — verified carrying one at 35% — and it is
+still invisible, because the iframe covers it exactly and the iframe's own document
+paints opaquely over the iframe element's background too. A userstyle scoped to
+`chatgpt.com` cannot style inside that document, and there is no deeper element to
+move to. An app-block **fill is not achievable with CSS alone**; this is a property
+of the page, not a selector that needs more work.
+
+An `outline` on the surface div would be visible, since outlines paint outside the
+box the iframe fills. That is an edge treatment rather than a fill, and it is not
+in the file.
+
+### The general test
+
+Before wiring any new target: does the matched element *paint*, or is it a shell
+with an opaque child? Outline it at 35% and look. Both failures so far were the
+second case, and one of them turned out to be unfixable.
 
 ### Probes
 
