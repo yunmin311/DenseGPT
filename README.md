@@ -23,24 +23,30 @@ Or: Stylus → **Write new style** → **Import** → paste the file.
 
 Stylus → DenseGPT → **Configure**.
 
-| Variable | Options | Default |
-| --- | --- | --- |
-| Content width | 40rem · 46rem · 54rem · Full | 46rem |
-| Inline code | Soft (light fill) · Minimal (no fill) | Soft |
+One variable, content width:
 
-Spacing is set by hand, per element — there is no density slider and no scalar.
-Body copy is tight, space *above* a heading is close to stock so sections still
-announce themselves, space *below* it is cut by half so the heading sits with its
-content. The values and the ratios behind them are in
+| Option | Value | |
+| --- | --- | --- |
+| **Auto** | `clamp(48rem, 72vw, 78rem)` | default — tracks the window |
+| Reading | `46rem` | |
+| Wide | `54rem` | |
+| Ultra Wide | `68rem` | |
+| Full | `none` | |
+
+Auto replaces the Widescreen extension: 72% of viewport width, floored at 48rem,
+capped at 78rem. It is applied through ChatGPT's own `--thread-content-max-width`
+property so the message column and the composer move together.
+
+Spacing is not configurable. Seven rules, every value fixed and verified by eye on
+real output — no density slider, no scalar, no calc. They are listed in full in
 [`docs/design-principles.md`](docs/design-principles.md).
 
-Nothing is shrunk: no font-size changes, no recolouring, no theme.
-
-**Light and dark are inherited, untouched.** The file has no rule for `html`,
-`body` or `:root`, no theme detection at all, and never sets page background, body
-text colour or `color-scheme`. The two blocks that need a tint derive it from
-`currentColor` or use one low-alpha value that reads correctly over both
-backgrounds. Sidebar, composer and buttons are not styled.
+**Light and dark are inherited, untouched.** No theme detection of any kind, no
+`color-mix`, no derived colour, and nothing that sets page background, body text
+colour or `color-scheme`. The only `:root` declaration in the file is the width
+variable. Fenced code blocks are not touched at all — background, colours, font
+size and syntax highlighting stay exactly as ChatGPT ships them. Sidebar and
+buttons are not styled; the composer is affected only by width.
 
 ## Install — response layer
 
@@ -58,7 +64,7 @@ background · `"explain in detail"` overrides everything.
 ## Structure
 
 ```
-densegpt.user.css          the whole visual layer, 248 lines
+densegpt.user.css          the whole visual layer, 117 lines
 STYLE.md                   response spec
 presets/                   per-tool paste blocks
 docs/design-principles.md  the density model, and what is never compressed
@@ -70,30 +76,28 @@ screenshots/
 
 > Increase information density without reducing semantic clarity.
 
-Density comes from space between things, never from smaller type. Heading,
-paragraph, list, inline code, code block, quote and table must stay
-distinguishable at a glance at every setting. Anything that fails that is a
-regression.
+Heading, paragraph, list, inline code, code block and quote must stay
+distinguishable at a glance. Anything that fails that is a regression, however
+much it tightens the page.
 
 ## Status
 
-**1.1.0 — visual rollback after the first live test failed.** Three changes:
+**1.2.0 — minimum rollback to the verified baseline, plus Auto width.**
 
-- The density scalar is gone. One multiplier compressed within-section and
-  between-section gaps equally, which flattens hierarchy exactly when the page gets
-  dense enough to need it. Spacing is hand-set per element now, and the Density
-  variable is retired.
-- All theme detection is gone. `html.dark` tints render over the wrong background
-  whenever the detection misses — that is what turned the blockquote into a grey
-  bar. Nothing keys on the theme any more.
-- `pre code { background: none }` is gone. It stripped the syntax-highlight surface
-  off code blocks in dark mode.
+1.0.0 drove every gap from one density scalar; it flattened hierarchy and failed
+live. 1.1.0 hand-set the spacing but re-tuned it instead of restoring it, and kept
+`currentColor` tints; spacing, inline code and blockquote all read too heavy, and
+it failed live too. 1.2.0 is the seven verified values verbatim, nothing else, plus
+content width.
 
-Selectors held up in the live test; the failures were in values, not targeting.
-`pre div:has(> code)` and the content-width rule are still unconfirmed — if
-something looks unstyled, run the console checks in
-[`docs/selectors.md`](docs/selectors.md). Content width is the one rule that
-depends on a Tailwind class, and it fails silently and alone.
+Everything else is deleted: the density scalar and all `calc`, all theme
+detection, all derived colour, and every rule for `h1`, `h4`–`h6`, `pre`, `table`,
+`hr`, `.katex-display`, first/last-child resets, margin-collapse fixes and
+Tailwind quote-mark resets.
+
+Unconfirmed: the three content-width rules. If width does nothing, run the console
+checks in [`docs/selectors.md`](docs/selectors.md) and report the numbers rather
+than adding selectors.
 
 Not planned: browser extension, injected scripts, React UI, config system, custom
 fonts, gradients, animation, colour themes.
