@@ -1,20 +1,14 @@
 /* ==UserStyle==
 @name           DenseGPT
 @namespace      github.com/yunmin311/DenseGPT
-@version        1.0.0
-@description    Make ChatGPT denser, calmer and easier to scan. Tightens the rhythm of assistant markdown without flattening its semantic hierarchy.
+@version        1.1.0
+@description    Make ChatGPT denser, calmer and easier to scan. Hand-set spacing for assistant markdown. Never touches page background, text colour or theme.
 @author         yunmin311
 @license        MIT
 @homepageURL    https://github.com/yunmin311/DenseGPT
 @supportURL     https://github.com/yunmin311/DenseGPT/issues
 @updateURL      https://raw.githubusercontent.com/yunmin311/DenseGPT/main/densegpt.user.css
 @preprocessor   default
-
-@var select density "Density" {
-  "Balanced": "1",
-  "Dense*": "0.72",
-  "Ultra Dense": "0.5"
-}
 
 @var select content_width "Content width" {
   "Narrow (40rem)": "40rem",
@@ -24,7 +18,7 @@
 }
 
 @var select inline_code "Inline code" {
-  "Soft (light fill)*": "6%",
+  "Soft (light fill)*": "5%",
   "Minimal (no fill)": "0%"
 }
 ==/UserStyle== */
@@ -32,50 +26,33 @@
 @-moz-document domain("chatgpt.com") {
 
 /* =====================================================================
-   DenseGPT - assistant markdown only.
-   Scope selector used by every rhythm rule below:
+   DenseGPT 1.1.0
+
+   Every spacing value below is set by hand, per element. There is no
+   density scalar: hierarchy is a set of deliberate ratios, not one
+   number multiplied across the page.
+
+   Theme rule: this file contains no rule for html, body or :root, and
+   never sets page background, body colour or color-scheme. Light and
+   dark are inherited from ChatGPT untouched. The two semantic blocks
+   that need a tint derive it from currentColor or a single low-alpha
+   value that works over both backgrounds.
+
+   Scope for every rhythm rule:
        [data-message-author-role="assistant"] .markdown
-   Change that one pair of selectors if ChatGPT renames things.
-   See docs/selectors.md.
+   Comments show ChatGPT's stock value where it is worth comparing.
    ===================================================================== */
 
-/* --- tokens ---------------------------------------------------------- */
-
-:root {
-  /* density scalar: 1 = Balanced, 0.72 = Dense, 0.5 = Ultra Dense */
-  --dg-d: /*[[density]]*/;
-
-  /* headings compress slower than body copy, so hierarchy survives Ultra */
-  --dg-dh: calc(0.45 + 0.55 * var(--dg-d));
-
-  --dg-cw: /*[[content_width]]*/;
-  --dg-icode: /*[[inline_code]]*/;
-
-  --dg-lh: calc(1.42 + 0.30 * var(--dg-d));       /* 1.72 / 1.64 / 1.57 */
-  --dg-lh-code: calc(1.40 + 0.15 * var(--dg-d));  /* 1.55 / 1.51 / 1.48 */
-
-  /* light theme */
-  --dg-quote-line: #64748b;
-  --dg-quote-bg: color-mix(in srgb, #64748b 8%, transparent);
-}
-
-html.dark,
-html[data-theme="dark"] {
-  --dg-quote-line: #8b98ab;
-  --dg-quote-bg: color-mix(in srgb, #94a3b8 12%, transparent);
-}
-
-@media (prefers-color-scheme: dark) {
-  html:not(.light):not([data-theme="light"]) {
-    --dg-quote-line: #8b98ab;
-    --dg-quote-bg: color-mix(in srgb, #94a3b8 12%, transparent);
-  }
-}
-
-/* --- block rhythm ---------------------------------------------------- */
+/* --- body rhythm ------------------------------------------------------
+   Compact, not cramped. 1.7 leaves CJK enough room to breathe.
+   -------------------------------------------------------------------- */
 
 [data-message-author-role="assistant"] .markdown {
-  line-height: var(--dg-lh);
+  line-height: 1.7;
+}
+
+[data-message-author-role="assistant"] .markdown p {
+  margin: 0.8em 0;                 /* stock ~1.25em */
 }
 
 [data-message-author-role="assistant"] .markdown > :first-child {
@@ -86,51 +63,63 @@ html[data-theme="dark"] {
   margin-bottom: 0;
 }
 
-[data-message-author-role="assistant"] .markdown p {
-  margin-block: calc(0.90em * var(--dg-d));
-}
-
-/* --- headings -------------------------------------------------------- */
+/* --- headings ---------------------------------------------------------
+   Space above is kept close to stock so a section still announces
+   itself. Space below is cut hard, so the heading sits with the block
+   it introduces instead of floating between two.
+   -------------------------------------------------------------------- */
 
 [data-message-author-role="assistant"] .markdown h1 {
-  margin-block: calc(1.50em * var(--dg-dh)) calc(0.55em * var(--dg-dh));
+  margin: 1.8em 0 0.5em;           /* stock ~2.2em / 1em */
   line-height: 1.25;
 }
 
 [data-message-author-role="assistant"] .markdown h2 {
-  margin-block: calc(1.45em * var(--dg-dh)) calc(0.50em * var(--dg-dh));
-  line-height: 1.30;
+  margin: 1.7em 0 0.45em;          /* stock ~2em / 1em */
+  line-height: 1.3;
 }
 
 [data-message-author-role="assistant"] .markdown h3 {
-  margin-block: calc(1.15em * var(--dg-dh)) calc(0.40em * var(--dg-dh));
+  margin: 1.4em 0 0.4em;           /* stock ~1.6em / 0.6em */
   line-height: 1.35;
 }
 
 [data-message-author-role="assistant"] .markdown :is(h4, h5, h6) {
-  margin-block: calc(1.00em * var(--dg-dh)) calc(0.30em * var(--dg-dh));
-  line-height: 1.40;
+  margin: 1.15em 0 0.35em;
+  line-height: 1.4;
 }
 
-/* stacked headings must not double their gap */
+/* The heading owns the gap below it. Without this, the following block's
+   own top margin wins the collapse and the heading drifts away from its
+   content. */
+[data-message-author-role="assistant"] .markdown
+  :is(h1, h2, h3, h4, h5, h6) + :is(p, ul, ol, pre, blockquote, table) {
+  margin-top: 0;
+}
+
+/* Two headings in a row: a small gap, not the full section gap. */
 [data-message-author-role="assistant"] .markdown
   :is(h1, h2, h3, h4, h5, h6) + :is(h1, h2, h3, h4, h5, h6) {
-  margin-top: calc(0.60em * var(--dg-dh));
+  margin-top: 0.7em;
 }
 
-/* --- lists ----------------------------------------------------------- */
+/* --- lists ------------------------------------------------------------
+   Tighter than stock, but each item still reads as its own line of
+   thought. 0.35em between items is roughly a third of the paragraph
+   gap: enough separation to scan, not enough to feel like paragraphs.
+   -------------------------------------------------------------------- */
 
 [data-message-author-role="assistant"] .markdown :is(ul, ol) {
-  margin-block: calc(0.80em * var(--dg-d));
-  padding-inline-start: calc(1.45em * var(--dg-dh));
+  margin: 0.75em 0;                /* stock ~1.25em */
+  padding-inline-start: 1.5em;     /* stock ~1.625em */
 }
 
 [data-message-author-role="assistant"] .markdown li {
-  margin-block: calc(0.35em * var(--dg-d));
+  margin: 0.35em 0;                /* stock ~0.5em */
 }
 
 [data-message-author-role="assistant"] .markdown li > p {
-  margin-block: calc(0.30em * var(--dg-d));
+  margin: 0.35em 0;
 }
 
 [data-message-author-role="assistant"] .markdown li > :first-child {
@@ -142,49 +131,61 @@ html[data-theme="dark"] {
 }
 
 [data-message-author-role="assistant"] .markdown :is(ul, ol) :is(ul, ol) {
-  margin-block: calc(0.30em * var(--dg-d));
+  margin: 0.3em 0;
+}
+
+/* A list right after a paragraph usually completes that sentence. */
+[data-message-author-role="assistant"] .markdown p + :is(ul, ol) {
+  margin-top: 0.4em;
 }
 
 /* --- inline code ------------------------------------------------------
-   `:not(pre) > code` is the guard that keeps code blocks out of this rule.
-   The fill is mixed from currentColor, so it adapts to light and dark on
-   its own and never turns code into coloured text.
+   Extremely light fill, small radius, no border. Mixed from
+   currentColor, so it follows light and dark on its own with no theme
+   detection, and never becomes the focal point of the line.
+   `:not(pre) > code` keeps this off code blocks.
    -------------------------------------------------------------------- */
 
 [data-message-author-role="assistant"] .markdown :not(pre) > code {
-  background-color: color-mix(in srgb, currentColor var(--dg-icode), transparent);
+  background-color: color-mix(in srgb, currentColor /*[[inline_code]]*/, transparent);
+  border: none;
   border-radius: 4px;
-  padding: 0.10em 0.28em;
-  font-size: 0.90em;
+  padding: 0.1em 0.3em;
+  font-size: 0.9em;
   color: inherit;
 }
 
-/* --- code blocks ----------------------------------------------------- */
+/* --- code blocks ------------------------------------------------------
+   Outer margin and inner padding only. Font size, colours and the
+   highlight background stay exactly as ChatGPT ships them.
+   -------------------------------------------------------------------- */
 
 [data-message-author-role="assistant"] .markdown pre {
-  margin-block: calc(1.00em * var(--dg-d));
+  margin: 1em 0;                   /* stock ~1.7em */
 }
 
 [data-message-author-role="assistant"] .markdown pre code {
-  line-height: var(--dg-lh-code);
-  background: none;
-  padding: 0;
-  font-size: inherit;
+  line-height: 1.55;
 }
 
-/* structural, not class-based: the wrapper that directly holds <code> */
+/* Structural, not class-based: the wrapper that directly holds <code>. */
 [data-message-author-role="assistant"] .markdown pre div:has(> code) {
-  padding: calc(0.85rem * var(--dg-d) + 0.15rem) 0.90rem;
+  padding: 0.85rem 0.95rem;        /* stock 1rem */
 }
 
-/* --- blockquote ------------------------------------------------------ */
+/* --- blockquote -------------------------------------------------------
+   One slightly deeper left rule carries the meaning. The fill is a
+   single low-alpha blue-grey that reads correctly over both the light
+   and the dark page background, so no theme rule is needed, and it is
+   faint enough not to become a grey bar across the column.
+   -------------------------------------------------------------------- */
 
 [data-message-author-role="assistant"] .markdown blockquote {
-  margin-block: calc(1.00em * var(--dg-d));
-  padding: calc(0.55em * var(--dg-d) + 0.10em) 0.90em;
-  border-inline-start: 3px solid var(--dg-quote-line);
+  margin: 1em 0;
+  padding: 0.55em 0.9em;
+  border-inline-start: 3px solid rgba(100, 116, 139, 0.85);
   border-radius: 6px;
-  background-color: var(--dg-quote-bg);
+  background-color: rgba(100, 116, 139, 0.09);
   color: inherit;
   font-style: normal;
 }
@@ -197,49 +198,50 @@ html[data-theme="dark"] {
   margin-bottom: 0;
 }
 
-/* Tailwind Typography injects quote marks; DenseGPT uses the rule instead */
+/* Tailwind Typography injects quote marks; the rule already says it. */
 [data-message-author-role="assistant"] .markdown blockquote p::before,
 [data-message-author-role="assistant"] .markdown blockquote p::after {
   content: none;
 }
 
-/* --- tables, rules, math --------------------------------------------- */
+/* --- tables, rules, math ---------------------------------------------- */
 
 [data-message-author-role="assistant"] .markdown table {
-  margin-block: calc(1.00em * var(--dg-d));
+  margin: 1em 0;
 }
 
 [data-message-author-role="assistant"] .markdown :is(th, td) {
-  padding: calc(0.42em * var(--dg-d) + 0.08em) 0.70em;
-  line-height: 1.45;
+  padding: 0.45em 0.7em;
+  line-height: 1.5;
 }
 
 [data-message-author-role="assistant"] .markdown hr {
-  margin-block: calc(1.50em * var(--dg-dh));
+  margin: 1.6em 0;
 }
 
 [data-message-author-role="assistant"] .markdown .katex-display {
-  margin-block: calc(1.00em * var(--dg-d));
+  margin: 1em 0;
 }
 
-/* --- content width ---------------------------------------------------
-   The only rule that touches page layout, and the first thing to break
-   if ChatGPT reworks its shell. It matches the element that carries the
-   --thread-content-max-width custom property, in all three Tailwind
-   spellings. If it stops matching, nothing else in this file is affected.
+/* --- content width ----------------------------------------------------
+   The only rule that touches page layout. It matches the element
+   carrying --thread-content-max-width in all three Tailwind spellings.
+   If it stops matching, width silently does nothing and no other rule
+   is affected.
    -------------------------------------------------------------------- */
 
 main article div[class*="--thread-content-max-width:"],
 main article div[class*="max-w-(--thread-content-max-width)"],
 main article div[class*="max-w-[var(--thread-content-max-width)]"] {
-  --thread-content-max-width: var(--dg-cw) !important;
-  max-width: var(--dg-cw) !important;
+  --thread-content-max-width: /*[[content_width]]*/ !important;
+  max-width: /*[[content_width]]*/ !important;
 }
 
-/* Fallback if the selectors above match nothing. Uncomment to use. */
+/* Fallback if the selectors above match nothing: uncomment the rule below
+   and set the width by hand (a placeholder cannot live inside a comment). */
 /*
 main article > div > div {
-  max-width: var(--dg-cw) !important;
+  max-width: 46rem !important;
 }
 */
 

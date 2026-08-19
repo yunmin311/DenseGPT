@@ -5,10 +5,9 @@ Empty until V1 is verified in a live session. Shoot these, in this order:
 | File | Content |
 | --- | --- |
 | `before-light.png` | Stock ChatGPT, one long answer, light |
-| `after-light.png` | Same answer, Dense preset, light |
+| `after-light.png` | Same answer, DenseGPT on, light |
 | `before-dark.png` | Stock ChatGPT, same answer, dark |
-| `after-dark.png` | Same answer, Dense preset, dark |
-| `density-presets.png` | Balanced / Dense / Ultra Dense, side by side |
+| `after-dark.png` | Same answer, DenseGPT on, dark |
 | `elements.png` | One answer containing H2, H3, list, inline code, code block, blockquote, table |
 
 Rules so the pairs are actually comparable:

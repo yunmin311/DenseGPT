@@ -25,16 +25,22 @@ Stylus → DenseGPT → **Configure**.
 
 | Variable | Options | Default |
 | --- | --- | --- |
-| Density | Balanced · Dense · Ultra Dense | Dense |
 | Content width | 40rem · 46rem · 54rem · Full | 46rem |
 | Inline code | Soft (light fill) · Minimal (no fill) | Soft |
 
-Density is a single scalar over every vertical gap. Headings compress at roughly
-half the rate of body copy, so hierarchy gets *more* legible as the page tightens,
-not less — see [`docs/design-principles.md`](docs/design-principles.md).
+Spacing is set by hand, per element — there is no density slider and no scalar.
+Body copy is tight, space *above* a heading is close to stock so sections still
+announce themselves, space *below* it is cut by half so the heading sits with its
+content. The values and the ratios behind them are in
+[`docs/design-principles.md`](docs/design-principles.md).
 
-Nothing is shrunk: no font-size changes, no recolouring, no theme. Sidebar,
-composer and buttons are untouched.
+Nothing is shrunk: no font-size changes, no recolouring, no theme.
+
+**Light and dark are inherited, untouched.** The file has no rule for `html`,
+`body` or `:root`, no theme detection at all, and never sets page background, body
+text colour or `color-scheme`. The two blocks that need a tint derive it from
+`currentColor` or use one low-alpha value that reads correctly over both
+backgrounds. Sidebar, composer and buttons are not styled.
 
 ## Install — response layer
 
@@ -52,7 +58,7 @@ background · `"explain in detail"` overrides everything.
 ## Structure
 
 ```
-densegpt.user.css          the whole visual layer, 246 lines
+densegpt.user.css          the whole visual layer, 248 lines
 STYLE.md                   response spec
 presets/                   per-tool paste blocks
 docs/design-principles.md  the density model, and what is never compressed
@@ -71,12 +77,23 @@ regression.
 
 ## Status
 
-V1. The CSS is written against ChatGPT's structural DOM hooks
-(`[data-message-author-role="assistant"] .markdown` and plain HTML elements) rather
-than utility classes, but it has not yet been re-verified against a live session
-after ChatGPT's most recent shell update — run the console checks in
-[`docs/selectors.md`](docs/selectors.md) if something looks unstyled. Content width
-is the one rule that depends on a Tailwind class, and it fails silently and alone.
+**1.1.0 — visual rollback after the first live test failed.** Three changes:
+
+- The density scalar is gone. One multiplier compressed within-section and
+  between-section gaps equally, which flattens hierarchy exactly when the page gets
+  dense enough to need it. Spacing is hand-set per element now, and the Density
+  variable is retired.
+- All theme detection is gone. `html.dark` tints render over the wrong background
+  whenever the detection misses — that is what turned the blockquote into a grey
+  bar. Nothing keys on the theme any more.
+- `pre code { background: none }` is gone. It stripped the syntax-highlight surface
+  off code blocks in dark mode.
+
+Selectors held up in the live test; the failures were in values, not targeting.
+`pre div:has(> code)` and the content-width rule are still unconfirmed — if
+something looks unstyled, run the console checks in
+[`docs/selectors.md`](docs/selectors.md). Content width is the one rule that
+depends on a Tailwind class, and it fails silently and alone.
 
 Not planned: browser extension, injected scripts, React UI, config system, custom
 fonts, gradients, animation, colour themes.

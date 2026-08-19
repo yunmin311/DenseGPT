@@ -16,8 +16,30 @@ and it is isolated at the bottom of the stylesheet.
 | `p`, `h1`–`h6`, `ul`, `ol`, `li`, `pre`, `code`, `blockquote`, `table`, `th`, `td`, `hr` | all rhythm rules | Maximum. Plain HTML. | Cannot break. |
 | `:not(pre) > code` | separating inline code from code blocks | Maximum. Structural. | Cannot break. |
 | `pre div:has(> code)` | code-block inner padding | Medium-high. Structural, but assumes `<code>` sits inside a wrapper `<div>` inside `<pre>`. | Code blocks keep ChatGPT's default padding. Nothing else is affected. |
-| `html.dark`, `html[data-theme="dark"]` | dark-mode quote tint | Medium. Tailwind's class strategy; the `data-theme` variant is defensive. | Quote tint falls back to the light value; `prefers-color-scheme` still covers most users. |
 | `main article div[class*="thread-content-max-width"]` | content width | **Low.** Depends on a Tailwind arbitrary-value class. | Content width silently does nothing. Nothing else is affected. |
+
+## No theme hooks
+
+There are none, deliberately. The stylesheet contains **no rule for `html`, `body`
+or `:root`**, no `html.dark`, no `[data-theme]`, no `prefers-color-scheme`, and it
+never sets page background, body text colour or `color-scheme`.
+
+1.0.0 had theme-conditional tints keyed on `html.dark`. When that detection misses
+— ChatGPT renames the class, or the user's OS and ChatGPT themes disagree — a
+light-theme fill renders over a dark page. That is what turned the blockquote into
+a grey bar. Removed in 1.1.0.
+
+Tints now come from `currentColor` (inline code) or from one low-alpha value that
+reads correctly over both backgrounds (blockquote). Neither needs to know the
+theme, so neither can be wrong about it.
+
+Grep before every release:
+
+```
+^\s*(html|body|:root)   →  no matches
+prefers-color-scheme    →  no matches
+color-scheme\s*:        →  no matches
+```
 
 ## The one line to fix
 
@@ -65,7 +87,7 @@ declares the variable or consumes it.
 If all three match nothing, uncomment the fallback at the end of the stylesheet:
 
 ```css
-main article > div > div { max-width: var(--dg-cw) !important; }
+main article > div > div { max-width: 46rem !important; }
 ```
 
 It is blunt — it hits the turn wrapper directly and will need adjusting if the
@@ -80,7 +102,8 @@ a bug.
 
 ## Status
 
-Selectors are written against ChatGPT's documented-by-observation DOM as of
-v1.0.0 and have not yet been re-verified against a live session after the last
-update. Run the console checks above before filing a rendering bug — a zero count
-is a selector problem, anything else is a styling problem.
+v1.1.0. The scope selector and the element selectors held up in the first live
+test; the failures were in spacing values and theme detection, not in targeting.
+`pre div:has(> code)` and the content-width rule are still unconfirmed against a
+live session. Run the console checks above before filing a rendering bug — a zero
+count is a selector problem, anything else is a styling problem.
