@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           DenseGPT
 @namespace      github.com/yunmin311/DenseGPT
-@version        1.7.0
+@version        1.7.1
 @description    Verified compact reading layout for ChatGPT, one shared set of surface tokens, and auto content width. No density algorithm, no theme detection, no page background or text colour changes.
 @author         yunmin311
 @license        MIT
@@ -244,7 +244,12 @@ main {
    states the type.
    ==================================================================== */
 
-main [data-testid="webpage-citation-pill"] {
+/* The pill's testid sits on a transparent layout shell, 108x18. The
+   painted surface is the <a> inside it: 107x18, opaque, 12px radius,
+   overflow-hidden. Tinting the shell put the layer underneath an
+   opaque child that covers it edge to edge, so nothing showed even at
+   35%. Measured, not assumed. */
+main [data-testid="webpage-citation-pill"] a {
   background-image: linear-gradient(var(--dg-surface-cite), var(--dg-surface-cite));
 }
 
