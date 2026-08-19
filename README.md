@@ -25,19 +25,22 @@ Stylus → DenseGPT → **Configure**.
 
 One variable, content width:
 
-| Option | Value | |
-| --- | --- | --- |
-| **Auto** | `clamp(48rem, 72vw, 78rem)` | default — tracks the window |
-| Reading | `46rem` | |
-| Wide | `54rem` | |
-| Ultra Wide | `68rem` | |
-| Full | `none` | |
+| Option | Stop | At 16px root | Reading posture |
+| --- | --- | --- | --- |
+| Reading | `48rem` | 768px | prose, shortest measure |
+| **Balanced** | `58rem` | 928px | default — prose plus code that stops wrapping |
+| Wide | `70rem` | 1120px | tables and side-by-side code stay unscrolled |
+| Ultra | `82rem` | 1312px | fills a 2K window, reference material |
 
-Auto replaces the Widescreen extension: 72% of viewport width, floored at 48rem,
-capped at 78rem, re-evaluated live as the window is resized or zoomed. One rule,
-`main { --thread-content-max-width: … !important }`, on the element a live DOM
-dump confirmed to be the only declaration site — messages and composer both
-inherit it from there and stay on one centre axis.
+Four fixed stops, no slider and no viewport-tracking Auto. Each is
+`min(<stop>, calc(100vw - 3rem))`, so a narrow window shrinks the column instead of
+pinning text to the edges, keeping a 1.5rem gutter.
+
+One rule, `main { --thread-content-max-width: … !important }`, on the element a
+live DOM dump confirmed to be the only declaration site — messages and composer
+both inherit it from there and stay on one centre axis. It is a `max-width`, so a
+stop wider than the available column is simply inert and can never force
+horizontal overflow.
 
 Spacing is not configurable. Every value is fixed and verified by eye on real
 output — no density slider, no scalar, no calc. They are listed in full in
@@ -73,7 +76,7 @@ background · `"explain in detail"` overrides everything.
 ## Structure
 
 ```
-densegpt.user.css          the whole visual layer, 205 lines
+densegpt.user.css          the whole visual layer, 220 lines
 STYLE.md                   response spec
 presets/                   per-tool paste blocks
 docs/design-principles.md  the density model, and what is never compressed

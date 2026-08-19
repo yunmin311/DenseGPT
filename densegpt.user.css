@@ -1,8 +1,8 @@
 /* ==UserStyle==
 @name           DenseGPT
 @namespace      github.com/yunmin311/DenseGPT
-@version        1.8.0
-@description    Verified compact reading layout for ChatGPT, one shared set of surface tokens, and auto content width. No density algorithm, no theme detection, no page background or text colour changes.
+@version        1.9.0
+@description    Verified compact reading layout for ChatGPT, one shared set of surface tokens, and four content-width stops. No density algorithm, no theme detection, no page background or text colour changes.
 @author         yunmin311
 @license        MIT
 @homepageURL    https://github.com/yunmin311/DenseGPT
@@ -11,11 +11,10 @@
 @preprocessor   default
 
 @var select content_width "Content width" {
-  "Auto*": "clamp(48rem, 72vw, 78rem)",
-  "Reading (46rem)": "46rem",
-  "Wide (54rem)": "54rem",
-  "Ultra Wide (68rem)": "68rem",
-  "Full": "none"
+  "Reading (48rem)": "min(48rem, calc(100vw - 3rem))",
+  "Balanced (58rem)*": "min(58rem, calc(100vw - 3rem))",
+  "Wide (70rem)": "min(70rem, calc(100vw - 3rem))",
+  "Ultra (82rem)": "min(82rem, calc(100vw - 3rem))"
 }
 ==/UserStyle== */
 
@@ -196,6 +195,22 @@
    is not a Tailwind-churn hook. If a future build declares the
    variable deeper, the dump in docs/selectors.md reports it and the
    fix is to add `main *`.
+
+   Four fixed stops, no slider and no viewport-tracking Auto. A slider
+   invites tuning a number that only matters at two or three window
+   sizes; the stops are chosen so that each is a different reading
+   posture rather than a different number:
+
+     Reading   48rem   prose, one column, shortest measure
+     Balanced  58rem   default - prose plus code that stops wrapping
+     Wide      70rem   tables and side-by-side code stay unscrolled
+     Ultra     82rem   fills a 2K window, for reference material
+
+   Each stop is wrapped in min(stop, calc(100vw - 3rem)) so a narrow
+   window shrinks it instead of pinning text to the edges, keeping a
+   1.5rem gutter. This is a max-width, so a stop wider than the
+   available column is simply inert - it can never force overflow, and
+   with the sidebar open the column is container-limited as usual.
    ==================================================================== */
 
 main {

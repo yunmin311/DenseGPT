@@ -110,17 +110,26 @@ markdown rhythm, one quote/code tint pair, and content width.
 The one rule outside assistant markdown, and the reason the Widescreen extension is
 no longer needed.
 
-| Option | Value |
-| --- | --- |
-| Auto (default) | `clamp(48rem, 72vw, 78rem)` |
-| Reading | `46rem` |
-| Wide | `54rem` |
-| Ultra Wide | `68rem` |
-| Full | `none` |
+Four stops, no slider, no viewport-tracking Auto, no Full. A slider invites tuning
+a number that only matters at two or three window sizes; each stop is a different
+reading posture instead.
 
-Auto tracks the window: 72% of viewport width, never narrower than 48rem, never
-wider than 78rem. Resizing or zooming re-evaluates it — nothing has to be
-re-selected.
+| Option | Stop | 16px root | Latin measure | CJK measure |
+| --- | --- | --- | --- | --- |
+| Reading | `48rem` | 768px | ~96 ch | ~48 ch |
+| **Balanced** (default) | `58rem` | 928px | ~116 ch | ~58 ch |
+| Wide | `70rem` | 1120px | ~140 ch | ~70 ch |
+| Ultra | `82rem` | 1312px | ~164 ch | ~82 ch |
+
+Every stop is `min(<stop>, calc(100vw - 3rem))`. The second term is the responsive
+retreat: a narrow window shrinks the column rather than pinning text to the edges,
+and 3rem leaves a 1.5rem gutter on each side once the column is centred.
+
+The measure columns are the honest caveat. Classic prose comfort is 45–75 Latin
+characters and 35–45 CJK; every stop here is above that, because ChatGPT output is
+mostly code, tables and lists, where width pays for itself and long lines are rare.
+For continuous Chinese prose, Reading is already at the upper edge and Ultra is
+roughly double it.
 
 It is applied by one rule, `main { --thread-content-max-width: … !important }`,
 through ChatGPT's own custom property. A live DOM dump confirmed that `<main>` is
