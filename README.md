@@ -73,7 +73,7 @@ background · `"explain in detail"` overrides everything.
 ## Structure
 
 ```
-densegpt.user.css          the whole visual layer, 299 lines
+densegpt.user.css          the whole visual layer, 205 lines
 STYLE.md                   response spec
 presets/                   per-tool paste blocks
 docs/design-principles.md  the density model, and what is never compressed
@@ -90,6 +90,17 @@ distinguishable at a glance. Anything that fails that is a regression, however
 much it tightens the page.
 
 ## Status
+
+**1.8.0 — rolled back to the last stable stylesheet.** Citation pills, file-tile
+tints and app blocks are removed. All three had stable attribute hooks, but each
+needed live probing to find that the hook element was a transparent shell rather
+than the painted surface, and the app card turned out to be a cross-document
+`<iframe>` that CSS cannot reach at all. The findings are kept in
+[`docs/selectors.md`](docs/selectors.md) as a record; none of it is in the
+stylesheet.
+
+What remains is what was verified by eye and has stayed stable: markdown rhythm,
+inline code, blockquote, emphasis, horizontal rule, and content width.
 
 **1.5.0 — content width moves onto a measured hook.** A live DOM dump reports
 `--thread-content-max-width` declared on exactly one element, `<main>`, with the

@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           DenseGPT
 @namespace      github.com/yunmin311/DenseGPT
-@version        1.7.2
+@version        1.8.0
 @description    Verified compact reading layout for ChatGPT, one shared set of surface tokens, and auto content width. No density algorithm, no theme detection, no page background or text colour changes.
 @author         yunmin311
 @license        MIT
@@ -43,37 +43,19 @@
    never by a colour of its own: 15% of a desaturated blue is enough to
    tell a source from a piece of code, and still reads as grey.
 
-   Surface alpha stays in 5-7%. Edges are the only thing allowed to
+   Surface alpha stays in 5-6%. Edges are the only thing allowed to
    deepen, and only to 18-35%.
-
-   Declared on <main> rather than on the markdown root, because file
-   tiles live in the *user* turn: main is the nearest node that covers
-   assistant markdown, user attachments and the composer. currentColor
-   still resolves on the element that uses the token, not here.
    ==================================================================== */
 
-main {
+[data-message-author-role="assistant"] .markdown {
   --dg-ink: currentColor;
   --dg-ink-cite: color-mix(in srgb, currentColor 85%, #5b7196);
-  --dg-ink-pdf: color-mix(in srgb, currentColor 85%, #96706b);
-  --dg-ink-md: color-mix(in srgb, currentColor 85%, #6b9680);
-  --dg-ink-css: color-mix(in srgb, currentColor 85%, #806b96);
-  --dg-ink-json: color-mix(in srgb, currentColor 85%, #96896b);
 
   --dg-surface-soft: color-mix(in srgb, var(--dg-ink) 5%, transparent);
   --dg-surface-block: color-mix(in srgb, var(--dg-ink-cite) 6%, transparent);
-  --dg-surface-cite: color-mix(in srgb, var(--dg-ink-cite) 7%, transparent);
-  --dg-surface-pdf: color-mix(in srgb, var(--dg-ink-pdf) 6%, transparent);
-  --dg-surface-md: color-mix(in srgb, var(--dg-ink-md) 6%, transparent);
-  --dg-surface-css: color-mix(in srgb, var(--dg-ink-css) 6%, transparent);
-  --dg-surface-json: color-mix(in srgb, var(--dg-ink-json) 6%, transparent);
 
   --dg-edge: color-mix(in srgb, var(--dg-ink-cite) 35%, transparent);
   --dg-edge-soft: color-mix(in srgb, var(--dg-ink) 18%, transparent);
-  --dg-edge-pdf: color-mix(in srgb, var(--dg-ink-pdf) 22%, transparent);
-  --dg-edge-md: color-mix(in srgb, var(--dg-ink-md) 22%, transparent);
-  --dg-edge-css: color-mix(in srgb, var(--dg-ink-css) 22%, transparent);
-  --dg-edge-json: color-mix(in srgb, var(--dg-ink-json) 22%, transparent);
 }
 
 
@@ -219,81 +201,5 @@ main {
 main {
   --thread-content-max-width: /*[[content_width]]*/ !important;
 }
-
-
-/* ====================  7. citation and attachments  =================
-
-   Measured hooks, from a live DOM dump:
-
-     [data-testid="webpage-citation-pill"]   the citation pill
-     [role="group"][aria-label="<filename>"] the file tile root, with
-                                             its type in the extension
-
-   The tile's painted surface is the <button> inside that root, so the
-   type comes from the ancestor's aria-label and the paint lands on the
-   descendant. No :has(), no nth-child, no class matching, no text
-   matching.
-
-   Tints are painted as a background *image* layer, so ChatGPT's own
-   background-color survives underneath and the tile stays an opaque
-   card. Replacing background-color would make it translucent.
-
-   Untyped files get no tint. A category is coded only where the DOM
-   states the type.
-   ==================================================================== */
-
-/* The pill's testid sits on a transparent layout shell, 108x18. The
-   painted surface is the <a> inside it: 107x18, opaque, 12px radius,
-   overflow-hidden. Tinting the shell put the layer underneath an
-   opaque child that covers it edge to edge, so nothing showed even at
-   35%. Measured, not assumed. */
-main [data-testid="webpage-citation-pill"] a {
-  background-image: linear-gradient(var(--dg-surface-cite), var(--dg-surface-cite));
-}
-
-main [role="group"][aria-label$=".pdf" i] button {
-  background-image: linear-gradient(var(--dg-surface-pdf), var(--dg-surface-pdf));
-  border-color: var(--dg-edge-pdf);
-}
-
-main [role="group"][aria-label$=".md" i] button,
-main [role="group"][aria-label$=".markdown" i] button {
-  background-image: linear-gradient(var(--dg-surface-md), var(--dg-surface-md));
-  border-color: var(--dg-edge-md);
-}
-
-main [role="group"][aria-label$=".css" i] button {
-  background-image: linear-gradient(var(--dg-surface-css), var(--dg-surface-css));
-  border-color: var(--dg-edge-css);
-}
-
-main [role="group"][aria-label$=".json" i] button {
-  background-image: linear-gradient(var(--dg-surface-json), var(--dg-surface-json));
-  border-color: var(--dg-edge-json);
-}
-
-
-/* ========================  8. app block  ============================
-
-   Deliberately empty. Do not add a rule here.
-
-   The app card renders inside a cross-document <iframe>. Measured:
-
-     [data-app-block-preview]                 640x148  transparent
-       ...
-         div.bg-token-main-surface-primary    648x80   OPAQUE
-           iframe                             648x80   fills it exactly
-
-   The surface div does receive a tint - it was verified carrying one at
-   35% - and it is still invisible, because the iframe covers it edge to
-   edge and the iframe's own document paints opaquely over the iframe
-   element's background too. A userstyle scoped to chatgpt.com cannot
-   reach inside that document.
-
-   So an app-block *fill* is not possible with CSS alone. An outline on
-   the surface div would be visible, since outlines paint outside the
-   box the iframe fills - but that is an edge treatment, not this, and
-   it is not added without being asked for.
-   ==================================================================== */
 
 }

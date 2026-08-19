@@ -156,6 +156,13 @@ everything that is not ordinary markdown — which is what the probes below use.
 What two live dumps did **not** contain: any web citation, any non-image file
 attachment, any app/connector block. Nothing about their markup is known.
 
+## Investigated and removed in 1.8.0
+
+Everything in this section is a **record, not a plan**. Citation pills, file tiles
+and app blocks were wired in 1.6.0–1.7.2 and taken out again in 1.8.0. The hooks
+below are real and were confirmed live; keep them if the work is ever picked back
+up, and do not re-derive them.
+
 ### Confirmed hooks
 
 Three live dumps produced an attribute hook for all three targets.
@@ -172,8 +179,8 @@ selector on an ARIA attribute, not text matching, and `role="group"` disambiguat
 the tile root from the `button` inside it and from the message-action groups,
 which also use `role="group"` but never end in a file extension.
 
-Implemented: citation, and `.pdf` / `.md` / `.markdown` / `.css` / `.json` tiles.
-Untyped files get no tint. **The app block is not implemented and cannot be.**
+None of these are in the stylesheet. Citation and the file tiles worked; the app
+block never could.
 
 ### Citation: the testid is not the painted surface
 
@@ -213,9 +220,15 @@ in the file.
 
 ### The general test
 
-Before wiring any new target: does the matched element *paint*, or is it a shell
-with an opaque child? Outline it at 35% and look. Both failures so far were the
-second case, and one of them turned out to be unfixable.
+The lesson worth keeping from all of it: **a confirmed hook is not automatically a
+paint target.** Before wiring any new target, tint it at 35% with an outline and
+look. Both failures were the same shape — a shell whose opaque child paints the
+surface — and one of them turned out to be unfixable.
+
+The temporary style used for that test is deliberately not in this repository and
+never in `densegpt.user.css`. Rebuild it if needed: copy the rules under test,
+raise the alpha to 35%, add `outline: 2px solid <colour> !important` per rule, and
+install it as a second Stylus style so the real one is never edited.
 
 ### Probes
 
