@@ -72,25 +72,32 @@ Earlier versions had three unrelated slate blues — `rgba(60,82,115)`,
 lightnesses. That is what made the greys look dirty. There is now exactly one
 literal colour in the stylesheet: the hue anchor.
 
-### Typed surfaces — specified, not wired
+### Typed surfaces
 
-The same system extends to typed source chips. The palette is settled; what is
-missing is a DOM hook, because nothing in ChatGPT's assistant markdown carries a
-source *type*:
+Every ink is `currentColor` 85% plus 15% of a desaturated anchor, so all types
+share one lightness and differ only in trace hue.
 
-| Type | Ink | Surface |
-| --- | --- | --- |
-| plain inline code | `currentColor` | 5% |
-| citation / source | `currentColor` 85% + blue | 6–7% |
-| app block | `currentColor` 85% + blue | 7% |
-| PDF | `currentColor` 85% + warm red | 6% |
-| Markdown | `currentColor` 85% + green | 6% |
-| CSS | `currentColor` 85% + violet | 6% |
-| JSON / config | `currentColor` 85% + sand | 6% |
+| Type | Anchor | Surface | Edge | Wired to |
+| --- | --- | --- | --- | --- |
+| plain inline code | none — neutral | 5% | — | `:not(pre) > code` |
+| quote / citation | `#5b7196` grey-blue | 6% block, 7% pill | 35% | `blockquote`, `[data-testid="webpage-citation-pill"]` |
+| PDF | `#96706b` warm grey | 6% | 22% | `[aria-label$=".pdf" i]` tile |
+| Markdown | `#6b9680` grey-green | 6% | 22% | `[aria-label$=".md" i]` tile |
+| CSS | `#806b96` grey-violet | 6% | 22% | `[aria-label$=".css" i]` tile |
+| JSON / config | `#96896b` grey-sand | 6% | 22% | `[aria-label$=".json" i]` tile |
+| app block | — | — | — | **not wired**, see [`selectors.md`](selectors.md) |
 
-Only the first two are implemented, because only they have a selector. The rest
-stay here until a live DOM check shows what element carries the type — writing
-them against guessed class names is how 1.0.0 and 1.2.0 failed.
+Tokens are declared on `<main>`, not on the markdown root, because file tiles live
+in the *user* turn. `currentColor` still resolves on the element that uses the
+token, so the tint follows whatever text colour that element has.
+
+Tile tints are painted as a background *image* layer over ChatGPT's own
+`background-color`. Replacing the colour would turn an opaque card translucent;
+layering keeps the card and adds only the trace.
+
+Untyped files get no tint at all. A category is coded only where the DOM states
+its type — guessing it from a class name or from the visible label is how 1.0.0
+and 1.2.0 failed.
 
 ## What the file must never do
 

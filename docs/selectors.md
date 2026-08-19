@@ -156,7 +156,37 @@ everything that is not ordinary markdown — which is what the probes below use.
 What two live dumps did **not** contain: any web citation, any non-image file
 attachment, any app/connector block. Nothing about their markup is known.
 
-### Still needed — three separate probes
+### Confirmed hooks
+
+Three live dumps produced an attribute hook for all three targets.
+
+| Target | Hook | Evidence |
+| --- | --- | --- |
+| Citation | `[data-testid="webpage-citation-pill"]` | testid inventory, count 1 in a thread with one cited answer |
+| Attachment | `[role="group"][aria-label="<filename>"]` on the tile root; the painted surface is the `button` inside it | user-turn dump: `role="group" aria-label="Context_….pdf"`, `aria-label="tsconfig.node.json"` |
+| App block | `[data-app-block-preview]` (plus `data-app-block-preview-parking`) | `data-*` name inventory, count 1 each |
+
+The file tile carries its type as the **extension inside `aria-label`**, which is
+the `filename` hook — matched with `[aria-label$=".pdf" i]`. It is an attribute
+selector on an ARIA attribute, not text matching, and `role="group"` disambiguates
+the tile root from the `button` inside it and from the message-action groups,
+which also use `role="group"` but never end in a file extension.
+
+Implemented: citation, and `.pdf` / `.md` / `.markdown` / `.css` / `.json` tiles.
+Untyped files get no tint.
+
+**Not implemented: the app block.** The attribute name is confirmed, the element is
+not. `data-app-block-preview-parking` reads like portal scaffolding, so
+`[data-app-block-preview]` may be a persistent, possibly full-size container rather
+than the visible card — and a 6% tint on a full-size container is a grey rectangle
+across the thread. One check settles it:
+
+```js
+const e = document.querySelector('[data-app-block-preview]');
+console.log(e ? [e.outerHTML.slice(0, 500), getComputedStyle(e).display, JSON.stringify(e.getBoundingClientRect())] : 'not present');
+```
+
+### Probes
 
 The three targets live in three different places, so one script cannot find them.
 Attachments are **not** in the assistant turn: a file the user uploads renders in
