@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           DenseGPT
 @namespace      github.com/yunmin311/DenseGPT
-@version        2.0.0
+@version        2.1.0
 @description    Verified compact reading layout for ChatGPT, one shared set of surface tokens, four width presets plus a free width slider. No density algorithm, no theme detection, no page background or text colour changes.
 @author         yunmin311
 @license        MIT
@@ -10,15 +10,15 @@
 @updateURL      https://raw.githubusercontent.com/yunmin311/DenseGPT/main/densegpt.user.css
 @preprocessor   default
 
-@var select width_preset "Width preset" {
-  "Reading - long prose, narrowest column": "44rem",
-  "Balanced - everyday reading*": "54rem",
-  "Wide - code blocks and tables": "66rem",
-  "Ultra - large screens, reference material": "78rem",
-  "Custom - set it with the slider below": "initial"
+@var select dg-width-preset "Width preset" {
+  "reading:Reading - long prose, narrowest column": "44rem",
+  "balanced:Balanced - everyday reading*": "54rem",
+  "wide:Wide - code blocks and tables": "66rem",
+  "ultra:Ultra - large screens, reference material": "78rem",
+  "custom:Custom - set it with the slider below": "initial"
 }
 
-@var range width_custom "Custom width (used when preset is Custom)" [54, 36, 90, 1, "rem"]
+@var range dg-width-custom "Custom width (used when preset is Custom)" [54, 36, 90, 1, "rem"]
 ==/UserStyle== */
 
 @-moz-document domain("chatgpt.com") {
@@ -207,10 +207,24 @@
      Ultra     78rem   large screens, reference material
      Custom    36-90rem in 1rem steps, from the slider
 
+   Wiring. @preprocessor default compiles every @var into a CSS custom
+   property in a :root block prepended to this section. It does NOT
+   substitute USO-style square-bracket placeholders - those belong to
+   @preprocessor uso. So the variables are read here with plain var(),
+   under the exact names declared above: --dg-width-preset and
+   --dg-width-custom.
+
+   A USO placeholder in this file is not an error, which is what made
+   it dangerous: the CSS parser treats it as a comment, the
+   declaration ends up empty, an empty custom property is NOT the same
+   as an unset one, so var(name, fallback) does not fall back, min()
+   receives an empty argument, and the whole width feature silently
+   does nothing. That was the state of every release up to 2.0.0.
+
    How the two settings combine, with no conditionals available in
-   plain CSS: a preset writes its length into --dg-width-preset, and
-   the Custom option writes the keyword `initial` instead. A custom
-   property set to `initial` is the guaranteed-invalid value, so
+   plain CSS: a preset compiles to its length, and the Custom option
+   compiles to the keyword `initial`. A custom property set to
+   `initial` is the guaranteed-invalid value, so
    var(--dg-width-preset, var(--dg-width-custom)) falls through to the
    slider exactly when Custom is selected, and uses the preset
    otherwise. The slider is ignored by the four presets.
@@ -228,9 +242,6 @@
    ==================================================================== */
 
 main {
-  --dg-width-preset: /*[[width_preset]]*/;
-  --dg-width-custom: /*[[width_custom]]*/;
-
   --thread-content-max-width:
     min(var(--dg-width-preset, var(--dg-width-custom)), calc(100vw - 3rem)) !important;
 }
