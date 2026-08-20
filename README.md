@@ -83,7 +83,7 @@ background · `"explain in detail"` overrides everything.
 ## Structure
 
 ```
-densegpt.user.css          the whole visual layer, 236 lines
+densegpt.user.css          the whole visual layer, 249 lines
 STYLE.md                   response spec
 presets/                   per-tool paste blocks
 docs/design-principles.md  the density model, and what is never compressed
@@ -103,7 +103,17 @@ much it tightens the page.
 
 ## Status
 
-**2.0.0 — width presets plus a free slider.** Configure now has two controls:
+**2.1.0 - the width setting was never wired up.** `@preprocessor default`
+compiles each `@var` into a CSS custom property; it does not substitute
+`/*[[name]]*/` placeholders, which belong to `@preprocessor uso`. Every release
+up to 2.0.0 used placeholders, so the declaration compiled to an empty value and
+**content width did nothing at any preset**. The expression now reads Stylus's own
+generated `--dg-width-preset` and `--dg-width-custom` directly, and select
+options carry stable keys so a label can be reworded without resetting saved
+choices. Evidence and the manual end-to-end checklist are in
+[`docs/content-width.md`](docs/content-width.md).
+
+**2.0.0 - width presets plus a free slider.** Configure now has two controls:
 **Width preset** (Reading / Balanced / Wide / Ultra / Custom, labelled by purpose)
 and **Custom width**, a native slider from 36 to 90rem, read only in Custom mode.
 Two install bugs are fixed by documentation: re-importing to update created a
