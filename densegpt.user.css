@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           DenseGPT
 @namespace      github.com/yunmin311/DenseGPT
-@version        1.9.0
+@version        1.9.1
 @description    Verified compact reading layout for ChatGPT, one shared set of surface tokens, and four content-width stops. No density algorithm, no theme detection, no page background or text colour changes.
 @author         yunmin311
 @license        MIT
@@ -11,10 +11,10 @@
 @preprocessor   default
 
 @var select content_width "Content width" {
-  "Reading (48rem)": "min(48rem, calc(100vw - 3rem))",
-  "Balanced (58rem)*": "min(58rem, calc(100vw - 3rem))",
-  "Wide (70rem)": "min(70rem, calc(100vw - 3rem))",
-  "Ultra (82rem)": "min(82rem, calc(100vw - 3rem))"
+  "Reading (44rem)": "min(44rem, calc(100vw - 3rem))",
+  "Balanced (54rem)*": "min(54rem, calc(100vw - 3rem))",
+  "Wide (66rem)": "min(66rem, calc(100vw - 3rem))",
+  "Ultra (78rem)": "min(78rem, calc(100vw - 3rem))"
 }
 ==/UserStyle== */
 
@@ -198,13 +198,13 @@
 
    Four fixed stops, no slider and no viewport-tracking Auto. A slider
    invites tuning a number that only matters at two or three window
-   sizes; the stops are chosen so that each is a different reading
-   posture rather than a different number:
+   sizes; the stops are one per reading posture, and the set is closed -
+   no fifth stop, no renumbering.
 
-     Reading   48rem   prose, one column, shortest measure
-     Balanced  58rem   default - prose plus code that stops wrapping
-     Wide      70rem   tables and side-by-side code stay unscrolled
-     Ultra     82rem   fills a 2K window, for reference material
+     Reading   44rem   reading: prose, shortest measure
+     Balanced  54rem   general: default, prose plus code that fits
+     Wide      66rem   technical: tables and wide code stay unscrolled
+     Ultra     78rem   large display: reference material on 2K
 
    Each stop is wrapped in min(stop, calc(100vw - 3rem)) so a narrow
    window shrinks it instead of pinning text to the edges, keeping a

@@ -25,16 +25,17 @@ Stylus → DenseGPT → **Configure**.
 
 One variable, content width:
 
-| Option | Stop | At 16px root | Reading posture |
+| Option | Stop | At 16px root | Posture |
 | --- | --- | --- | --- |
-| Reading | `48rem` | 768px | prose, shortest measure |
-| **Balanced** | `58rem` | 928px | default — prose plus code that stops wrapping |
-| Wide | `70rem` | 1120px | tables and side-by-side code stay unscrolled |
-| Ultra | `82rem` | 1312px | fills a 2K window, reference material |
+| Reading | `44rem` | 704px | reading — prose, shortest measure |
+| **Balanced** | `54rem` | 864px | general — default, prose plus code that fits |
+| Wide | `66rem` | 1056px | technical — tables and wide code stay unscrolled |
+| Ultra | `78rem` | 1248px | large display — reference material on 2K |
 
-Four fixed stops, no slider and no viewport-tracking Auto. Each is
-`min(<stop>, calc(100vw - 3rem))`, so a narrow window shrinks the column instead of
-pinning text to the edges, keeping a 1.5rem gutter.
+Four fixed stops, no slider and no viewport-tracking Auto. One stop per posture,
+and the set is closed. Each is `min(<stop>, calc(100vw - 3rem))`, so a narrow
+window shrinks the column instead of pinning text to the edges, keeping a 1.5rem
+gutter.
 
 One rule, `main { --thread-content-max-width: … !important }`, on the element a
 live DOM dump confirmed to be the only declaration site — messages and composer
