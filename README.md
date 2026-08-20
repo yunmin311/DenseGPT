@@ -17,31 +17,37 @@ Use either on its own. They fix the same problem from opposite ends.
 2. Open [`densegpt.user.css`](densegpt.user.css) → **Raw** → Stylus offers to install it.
 3. Reload `chatgpt.com`.
 
-Or: Stylus → **Write new style** → **Import** → paste the file.
+**To update, use Stylus → Manage → Check for updates.** Do not re-import: *Write
+new style → Import* creates a *second* copy of the style, and two copies both
+injecting `!important` width rules make settings look like they do nothing. It also
+resets every saved value.
 
-### Variables
+### Content width
 
-Stylus → DenseGPT → **Configure**.
+Stylus → DenseGPT → **Configure**. Full detail in
+[`docs/content-width.md`](docs/content-width.md).
 
-One variable, content width:
+| Width preset | Width | For |
+| --- | --- | --- |
+| Reading | `44rem` / 704px | long prose, narrowest column |
+| **Balanced** (default) | `54rem` / 864px | everyday reading |
+| Wide | `66rem` / 1056px | code blocks and tables |
+| Ultra | `78rem` / 1248px | large screens, reference material |
+| Custom | slider, 36–90rem | anything in between |
 
-| Option | Stop | At 16px root | Posture |
-| --- | --- | --- | --- |
-| Reading | `44rem` | 704px | reading — prose, shortest measure |
-| **Balanced** | `54rem` | 864px | general — default, prose plus code that fits |
-| Wide | `66rem` | 1056px | technical — tables and wide code stay unscrolled |
-| Ultra | `78rem` | 1248px | large display — reference material on 2K |
-
-Four fixed stops, no slider and no viewport-tracking Auto. One stop per posture,
-and the set is closed. Each is `min(<stop>, calc(100vw - 3rem))`, so a narrow
-window shrinks the column instead of pinning text to the edges, keeping a 1.5rem
-gutter.
+The slider is read only when the preset is Custom; the four presets ignore it.
+Everything is wrapped in `min(…, calc(100vw - 3rem))`, so a narrow window shrinks
+the column instead of pinning text to the edges, keeping a 1.5rem gutter.
 
 One rule, `main { --thread-content-max-width: … !important }`, on the element a
 live DOM dump confirmed to be the only declaration site — messages and composer
 both inherit it from there and stay on one centre axis. It is a `max-width`, so a
-stop wider than the available column is simply inert and can never force
+value wider than the available column is simply inert and can never force
 horizontal overflow.
+
+[`docs/width-preview.html`](docs/width-preview.html) is a standalone page that
+reproduces the mechanism with the controls wired live — open it directly to pick a
+Custom value or to confirm the behaviour without touching ChatGPT.
 
 Spacing is not configurable. Every value is fixed and verified by eye on real
 output — no density slider, no scalar, no calc. They are listed in full in
@@ -77,11 +83,13 @@ background · `"explain in detail"` overrides everything.
 ## Structure
 
 ```
-densegpt.user.css          the whole visual layer, 220 lines
+densegpt.user.css          the whole visual layer, 238 lines
 STYLE.md                   response spec
 presets/                   per-tool paste blocks
 docs/design-principles.md  the density model, and what is never compressed
 docs/selectors.md          every DOM hook, its stability, how to repair it
+docs/content-width.md      the width setting, its install traps, its self-test
+docs/width-preview.html    standalone preview of the width mechanism
 screenshots/
 ```
 
@@ -94,6 +102,16 @@ distinguishable at a glance. Anything that fails that is a regression, however
 much it tightens the page.
 
 ## Status
+
+**2.0.0 — width presets plus a free slider.** Configure now has two controls:
+**Width preset** (Reading / Balanced / Wide / Ultra / Custom, labelled by purpose)
+and **Custom width**, a native slider from 36 to 90rem, read only in Custom mode.
+Two install bugs are fixed by documentation: re-importing to update created a
+*second* copy of the style whose `!important` rules made settings look dead, and
+option labels that named their own value reset every saved choice whenever a value
+was tuned. Everything is measured in
+[`docs/content-width.md`](docs/content-width.md); `content_width` is replaced by
+`width_preset` + `width_custom`, so the width choice resets once on upgrade.
 
 **1.8.0 — rolled back to the last stable stylesheet.** Citation pills, file-tile
 tints and app blocks are removed. All three had stable attribute hooks, but each

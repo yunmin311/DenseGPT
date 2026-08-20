@@ -110,9 +110,9 @@ markdown rhythm, one quote/code tint pair, and content width.
 The one rule outside assistant markdown, and the reason the Widescreen extension is
 no longer needed.
 
-Four stops, no slider, no viewport-tracking Auto, no Full. A slider invites tuning
-a number that only matters at two or three window sizes. Each stop is one reading
-posture, and **the set is closed** — no fifth stop, no renumbering.
+Four recommended stops plus a free slider. The stops are the design; the slider is
+the escape hatch, and it exists because a userstyle that replaces a width extension
+has to be able to land on any number its users were already using.
 
 | Option | Posture | Stop | 16px root | Latin measure | CJK measure |
 | --- | --- | --- | --- | --- | --- |
@@ -120,10 +120,13 @@ posture, and **the set is closed** — no fifth stop, no renumbering.
 | **Balanced** (default) | general | `54rem` | 864px | ~108 ch | ~54 ch |
 | Wide | technical | `66rem` | 1056px | ~132 ch | ~66 ch |
 | Ultra | large display | `78rem` | 1248px | ~156 ch | ~78 ch |
+| Custom | any | 36–90rem | 576–1440px | ~72–180 ch | ~36–90 ch |
 
-Every stop is `min(<stop>, calc(100vw - 3rem))`. The second term is the responsive
+Everything is `min(<value>, calc(100vw - 3rem))`. The second term is the responsive
 retreat: a narrow window shrinks the column rather than pinning text to the edges,
-and 3rem leaves a 1.5rem gutter on each side once the column is centred.
+and 3rem leaves a 1.5rem gutter on each side once the column is centred. The
+mechanism, and why a preset and a slider can coexist without conditionals, is in
+[`content-width.md`](content-width.md).
 
 The measure columns are the honest caveat. Classic prose comfort is 45–75 Latin
 characters and 35–45 CJK; every stop is above that, because ChatGPT output is

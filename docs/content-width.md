@@ -1,0 +1,202 @@
+# Content width
+
+Replaces the Widescreen extension. Four recommended stops plus a free slider, all
+applied through ChatGPT's own `--thread-content-max-width` so messages and composer
+stay on one centre axis.
+
+## What Configure looks like
+
+Stylus toolbar icon → the gear on the DenseGPT row → **Configure**.
+
+| Control | Options |
+| --- | --- |
+| **Width preset** | Reading · Balanced · Wide · Ultra · Custom |
+| **Custom width** | slider, 36–90rem in 1rem steps — only read when the preset is Custom |
+
+| Preset | Width | For |
+| --- | --- | --- |
+| Reading | 44rem / 704px | long prose, narrowest column |
+| **Balanced** (default) | 54rem / 864px | everyday reading |
+| Wide | 66rem / 1056px | code blocks and tables |
+| Ultra | 78rem / 1248px | large screens, reference material |
+
+**If there is no gear icon, the metadata block failed to parse** and no variable
+exists to configure. That is the first thing to check when settings appear to do
+nothing.
+
+Option labels carry no rem numbers on purpose. Stylus stores a select choice by its
+label, so a label that names its own value would silently reset every saved choice
+the moment that value is tuned.
+
+## How the preset and the slider combine
+
+Plain CSS has no conditionals, and the `default` preprocessor only substitutes
+text. The two settings are combined with the guaranteed-invalid trick:
+
+```css
+main {
+  --dg-width-preset: 54rem;    /* or the keyword `initial`, for Custom */
+  --dg-width-custom: 62rem;    /* always the slider value */
+
+  --thread-content-max-width:
+    min(var(--dg-width-preset, var(--dg-width-custom)), calc(100vw - 3rem)) !important;
+}
+```
+
+A custom property set to `initial` computes to the guaranteed-invalid value, so
+`var(--dg-width-preset, …)` falls through to its fallback — the slider — exactly
+when Custom is selected, and uses the preset otherwise. The four presets ignore the
+slider entirely.
+
+`min(…, calc(100vw - 3rem))` is the responsive retreat: below roughly
+`stop + 3rem` of window width the column tracks the viewport instead of its stop,
+keeping a 1.5rem gutter each side. Because the value feeds a `max-width`, a stop
+wider than the available column is inert — it can never force horizontal overflow,
+and with the sidebar open the column stays container-limited as usual.
+
+## Install and update — the part that actually bites
+
+**Install once, then update in place.** In Stylus, *Write new style → Import →
+paste* creates a **new** style every time. Doing that repeatedly leaves several
+copies of DenseGPT installed at once, all injecting `!important` width rules; the
+last one injected wins, so changing settings in one of them appears to do nothing.
+It also resets every variable to its default, because a fresh style has no saved
+values.
+
+- **Install:** open the raw `densegpt.user.css` URL and let Stylus offer to install
+  it. That registers `@updateURL`.
+- **Update:** Stylus → *Manage* → **Check for updates** on the DenseGPT row. Saved
+  variable values survive an update this way.
+- **Never** re-import to update.
+- If settings stop responding, open *Manage* and check for more than one DenseGPT
+  entry. Delete the extras.
+
+Upgrading from 1.9.1 or earlier resets the width choice once: the variable was
+renamed from `content_width` to `width_preset` + `width_custom`, so there is no old
+value to carry over. This is the only intentional reset.
+
+## Verify a live install
+
+Paste into the ChatGPT console (Ctrl+Shift+J). It checks the whole feature from
+computed styles and bounding rects, not from source:
+
+```js
+(() => {
+  const R = [], P = (ok, t) => R.push((ok ? 'PASS  ' : 'FAIL  ') + t);
+  let hits = [];
+  for (const s of document.styleSheets) {
+    let rules; try { rules = s.cssRules } catch (e) { continue }
+    for (const r of rules)
+      if (r.cssText && r.cssText.includes('--thread-content-max-width') && r.cssText.includes('!important'))
+        hits.push((s.ownerNode && s.ownerNode.id) || '(inline)');
+  }
+  hits = [...new Set(hits)];
+  P(hits.length === 1, 'exactly one style sets the width  -> ' + (hits.join(', ') || 'none'));
+
+  const m = document.querySelector('main');
+  const cs = getComputedStyle(m);
+  const val = cs.getPropertyValue('--thread-content-max-width').trim();
+  const pre = cs.getPropertyValue('--dg-width-preset').trim();
+  const cus = cs.getPropertyValue('--dg-width-custom').trim();
+  P(!!val, 'width variable resolves  -> ' + (val || 'EMPTY'));
+  R.push('      preset=' + (pre || '(initial -> slider)') + '  slider=' + (cus || '(unset)'));
+
+  const rect = e => e ? (r => ({ w: Math.round(r.width), c: Math.round(r.left + r.width / 2) }))(e.getBoundingClientRect()) : null;
+  const a = document.querySelector('[data-message-author-role="assistant"]');
+  const u = document.querySelector('[data-message-author-role="user"]');
+  const A = rect(a && a.closest('section[data-turn]')), U = rect(u && u.closest('section[data-turn]')),
+        C = rect(document.querySelector('main form'));
+  R.push('      assistant ' + (A ? A.w + 'px @' + A.c : 'n/a') +
+         '   user ' + (U ? U.w + 'px @' + U.c : 'n/a') +
+         '   composer ' + (C ? C.w + 'px @' + C.c : 'n/a'));
+  const cs2 = [A, U, C].filter(Boolean).map(x => x.c);
+  P(Math.max(...cs2) - Math.min(...cs2) <= 2, 'assistant, user and composer share one centre axis');
+
+  const sw = document.documentElement.scrollWidth;
+  P(sw <= innerWidth + 1, 'no horizontal page overflow  (scrollWidth ' + sw + ' vs innerWidth ' + innerWidth + ')');
+  R.push('      viewport ' + innerWidth + 'px, retreat cap = ' + (innerWidth - 48) + 'px');
+  console.log('=== DenseGPT content width ===\n' + R.join('\n'));
+})()
+```
+
+Run it once per preset, then drag the slider in Custom and run it again. Repeat at
+a wide window, a 1080p window and a window narrow enough to trigger the retreat.
+Every line should read PASS, and the reported column width should match the table
+above until the retreat engages.
+
+## Offline preview
+
+[`width-preview.html`](width-preview.html) is a standalone page — open it directly,
+no server — that reproduces the exact same custom properties, the same `min()`
+expression and the same `initial` fallback, with radio buttons and the slider
+wired live. It prints the CSS Stylus would inject, the computed value, the measured
+column, the centre-axis check and the overflow check. Use it to confirm the
+mechanism itself, or to choose a Custom value, without touching ChatGPT.
+
+## Verified
+
+Measured in headless Chrome, from computed styles and bounding rects. The
+stylesheet under test is `densegpt.user.css` itself — the metadata block stripped,
+the two placeholders substituted and the `@-moz-document` wrapper unwrapped,
+exactly as Stylus injects it — loaded against a mock of ChatGPT's structure
+(`main` → `section[data-turn]` → `[data-message-author-role]` → `.markdown`, plus a
+`form` composer).
+
+Presets at a 1920px window (viewport 1898px after the scrollbar):
+
+| Preset | Computed variable | Column |
+| --- | --- | --- |
+| Reading | `min(44rem, calc(100vw - 3rem))` | 704px |
+| Balanced | `min(54rem, calc(100vw - 3rem))` | 864px |
+| Wide | `min(66rem, calc(100vw - 3rem))` | 1056px |
+| Ultra | `min(78rem, calc(100vw - 3rem))` | 1248px |
+
+Custom, with the preset writing `initial`:
+
+| Slider | Column | Note |
+| --- | --- | --- |
+| 36rem | 576px | lower bound |
+| 62rem | 992px | |
+| 72rem | 1152px | computed `--dg-width-preset` reads empty, i.e. guaranteed-invalid |
+| 90rem | 1440px | upper bound |
+
+Presets ignore the slider: with the slider parked at 90rem, Balanced still measured
+864px and Reading 704px.
+
+Responsive retreat, Balanced unless noted:
+
+| Window | Viewport | Cap | Column | Retreat |
+| --- | --- | --- | --- | --- |
+| 2560 | 2538 | 2490 | 864px | no |
+| 1200 | 1178 | 1130 | 864px | no |
+| 1200, Ultra | 1178 | 1130 | 1130px | yes |
+| 1000, Ultra | 978 | 930 | 930px | yes |
+| 900 | 878 | 830 | 830px | yes |
+| 700 | 678 | 630 | 630px | yes |
+| 500 | 512 | 464 | 464px | yes |
+
+In all of the above: assistant, user and composer centres identical to the pixel
+(axis spread 0px), and `scrollWidth ≤ innerWidth` everywhere — no horizontal
+overflow at any width or window size.
+
+The frozen visuals were re-measured in the same runs and are unchanged: paragraph
+margin 7.2px and line-height 26.4px, `h2` 18.4px, blockquote left rule 3px with a
+6px radius, `em` weight 500 with bold-italic still 700, `hr` 1px, inline code fill
+5% of the text colour.
+
+Not verifiable this way, and still worth a look in the real browser: whether the
+Configure gear appears, and whether a saved value survives a Stylus update.
+
+## Stylus native UI limits
+
+Things the design has to work around rather than fix:
+
+- **No tooltips.** UserCSS has no description field for a variable, so the
+  explanation has to live inside the label text.
+- **No conditional visibility.** The Custom slider is always shown, even while a
+  preset is selected. Its label says when it applies; nothing can grey it out.
+- **Select values are stored by label**, which is why labels avoid numbers.
+- **No live drag preview.** Values apply when the config dialog is saved, not
+  during the drag. `width-preview.html` exists partly to cover that.
+- **No units on the range readout** beyond the suffix Stylus renders, and no way to
+  show the resulting pixel width next to it.

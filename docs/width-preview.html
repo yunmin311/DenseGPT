@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DenseGPT - content width preview</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --page: #fff; --ink: #1a1a1a; --dim: #6b7280; --line: rgba(0,0,0,.12);
+    --surface: rgba(0,0,0,.04); --ok: #15803d; --bad: #b91c1c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #212121; --ink: #ececec; --dim: #9ca3af; --line: rgba(255,255,255,.15);
+      --surface: rgba(255,255,255,.06); --ok: #4ade80; --bad: #f87171;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink);
+         font: 15px/1.5 ui-sans-serif, system-ui, sans-serif; }
+
+  /* ---- the control panel is not part of the test ---- */
+  .panel { position: sticky; top: 0; z-index: 5; background: var(--page);
+           border-bottom: 1px solid var(--line); padding: .75rem 1rem; }
+  .panel h1 { font-size: .95rem; margin: 0 0 .5rem; }
+  .row { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; }
+  label { display: inline-flex; align-items: center; gap: .35rem; font-size: .85rem; }
+  input[type=range] { width: 220px; vertical-align: middle; }
+  pre { margin: .6rem 0 0; padding: .6rem .7rem; background: var(--surface);
+        border-radius: 6px; font: 12px/1.55 ui-monospace, monospace;
+        white-space: pre-wrap; overflow-x: auto; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); }
+
+  /* ---- everything below mimics the ChatGPT structure under test ---- */
+  main { padding: 1.5rem 0 3rem; }
+  .col { max-width: var(--thread-content-max-width); margin-inline: auto;
+         padding-inline: 1rem; }
+  .assistant p { margin: .45em 0; line-height: 1.65; }
+  .user { display: flex; justify-content: flex-end; }
+  .bubble { background: var(--surface); border-radius: 18px; padding: .5rem .9rem;
+            max-width: 80%; }
+  .composer { border: 1px solid var(--line); border-radius: 22px;
+              padding: .7rem .9rem; color: var(--dim); margin-top: 1.25rem; }
+  .ruler { height: 6px; background: var(--surface); border-left: 2px solid var(--line);
+           border-right: 2px solid var(--line); margin-bottom: .75rem; }
+</style>
+</head>
+<body>
+
+<!-- Stylus writes exactly this block. Rebuilt live below, nothing else. -->
+<style id="cfg"></style>
+
+<div class="panel">
+  <h1>DenseGPT - content width preview</h1>
+  <div class="row" id="presets"></div>
+  <div class="row" style="margin-top:.5rem">
+    <label>Custom width
+      <input type="range" id="slider" min="36" max="90" step="1" value="54">
+      <span id="sliderVal">54rem</span>
+    </label>
+  </div>
+  <pre id="out"></pre>
+</div>
+
+<main>
+  <div class="col ruler" id="ruler"></div>
+  <div class="col assistant" id="a">
+    <p>Assistant column. This page reproduces the width mechanism from
+      <code>densegpt.user.css</code> exactly: the same two custom properties, the same
+      <code>min(var(--dg-width-preset, var(--dg-width-custom)), calc(100vw - 3rem))</code>,
+      and the same <code>initial</code> fallback that hands control to the slider only
+      when Custom is selected.</p>
+    <p>Resize the window to watch the responsive retreat engage. Below roughly
+      <code>stop + 3rem</code> the column stops matching its stop and tracks the viewport
+      instead, keeping a 1.5rem gutter on each side.</p>
+  </div>
+  <div class="col user"><div class="bubble" id="u">User message</div></div>
+  <div class="col"><div class="composer" id="c">Composer</div></div>
+</main>
+
+<script>
+const PRESETS = [
+  ['Reading',  '44rem', 'long prose, narrowest column'],
+  ['Balanced', '54rem', 'everyday reading (default)'],
+  ['Wide',     '66rem', 'code blocks and tables'],
+  ['Ultra',    '78rem', 'large screens, reference material'],
+  ['Custom',   'initial', 'set it with the slider'],
+];
+// #preset=Custom&custom=62 preselects a state, so this page can also be driven
+// headlessly for regression checks.
+const params = new URLSearchParams(location.hash.slice(1));
+const wanted = PRESETS.findIndex(p => p[0].toLowerCase() === (params.get('preset') || '').toLowerCase());
+let chosen = wanted >= 0 ? wanted : 1;
+
+const box = document.getElementById('presets');
+PRESETS.forEach(([name, , hint], i) => {
+  const l = document.createElement('label');
+  l.innerHTML = '<input type="radio" name="p" ' + (i === chosen ? 'checked' : '') + '>' +
+                '<b>' + name + '</b> <span style="color:var(--dim)">' + hint + '</span>';
+  l.querySelector('input').onchange = () => { chosen = i; render(); };
+  box.appendChild(l);
+});
+
+const slider = document.getElementById('slider');
+if (params.get('custom')) slider.value = params.get('custom');
+document.getElementById('sliderVal').textContent = slider.value + 'rem';
+slider.oninput = () => { document.getElementById('sliderVal').textContent = slider.value + 'rem'; render(); };
+
+function render() {
+  const preset = PRESETS[chosen][1];
+  const custom = slider.value + 'rem';
+  const css =
+    'main {\n' +
+    '  --dg-width-preset: ' + preset + ';\n' +
+    '  --dg-width-custom: ' + custom + ';\n' +
+    '  --thread-content-max-width:\n' +
+    '    min(var(--dg-width-preset, var(--dg-width-custom)), calc(100vw - 3rem));\n' +
+    '}';
+  document.getElementById('cfg').textContent = css;
+  requestAnimationFrame(report.bind(null, css));
+}
+
+function report(css) {
+  const m = document.querySelector('main');
+  const val = getComputedStyle(m).getPropertyValue('--thread-content-max-width').trim();
+  const box = el => { const r = el.getBoundingClientRect();
+                      return { w: Math.round(r.width), c: Math.round(r.left + r.width / 2) }; };
+  const ruler = box(document.getElementById('ruler'));
+  const a = box(document.getElementById('a'));
+  const u = box(document.querySelector('.user'));
+  const c = box(document.querySelector('.composer').parentElement);
+
+  const axis = Math.max(Math.abs(a.c - u.c), Math.abs(a.c - c.c)) <= 1;
+  const overflow = document.documentElement.scrollWidth > window.innerWidth + 1;
+  const cap = window.innerWidth - 48;
+  const stop = PRESETS[chosen][1] === 'initial' ? slider.value * 16 : parseInt(PRESETS[chosen][1]) * 16;
+  const retreat = cap < stop;
+  const mark = (ok, t) => '<span class="' + (ok ? 'ok' : 'bad') + '">' + (ok ? 'PASS' : 'FAIL') + '</span>  ' + t;
+
+  document.getElementById('out').innerHTML =
+    'injected by Stylus:\n' + css.replace(/</g, '&lt;') + '\n\n' +
+    'computed --thread-content-max-width : ' + val + '\n' +
+    'viewport                            : ' + window.innerWidth + 'px  (cap = 100vw - 3rem = ' + cap + 'px)\n' +
+    'column width                        : ' + ruler.w + 'px' +
+      (retreat ? '   <- responsive retreat active' : '') + '\n' +
+    'assistant / user / composer centres : ' + a.c + ' / ' + u.c + ' / ' + c.c + '\n\n' +
+    mark(val !== '', 'the variable resolves to a value') + '\n' +
+    mark(axis, 'assistant, user and composer share one centre axis') + '\n' +
+    mark(!overflow, 'no horizontal page overflow  (scrollWidth ' +
+         document.documentElement.scrollWidth + ' vs innerWidth ' + window.innerWidth + ')') + '\n' +
+    mark(ruler.w <= Math.min(stop, cap) + 33, 'column never exceeds min(stop, viewport - 3rem)');
+}
+
+addEventListener('resize', () => render());
+render();
+</script>
+</body>
+</html>
