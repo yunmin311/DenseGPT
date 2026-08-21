@@ -33,7 +33,9 @@
   .ok { color: var(--ok); } .bad { color: var(--bad); }
 
   /* ---- everything below mimics the ChatGPT structure under test ---- */
-  main { padding: 1.5rem 0 3rem; }
+  /* container-type makes this <main> a query container, as ChatGPT's is, so
+     100cqi below resolves against the column exactly as it does on the real page */
+  main { padding: 1.5rem 0 3rem; container-type: inline-size; container-name: main; }
   .col { max-width: var(--thread-content-max-width); margin-inline: auto;
          padding-inline: 1rem; }
   .assistant p { margin: .45em 0; line-height: 1.65; }
@@ -68,11 +70,11 @@
   <div class="col assistant" id="a">
     <p>Assistant column. This page reproduces the width mechanism from
       <code>densegpt.user.css</code> exactly: the same two custom properties, the same
-      <code>min(var(--dg-width-preset, var(--dg-width-custom)), calc(100vw - 3rem))</code>,
+      <code>min(var(--dg-width-preset, var(--dg-width-custom)), calc(100cqi - 3rem))</code>,
       and the same <code>initial</code> fallback that hands control to the slider only
       when Custom is selected.</p>
     <p>Resize the window to watch the responsive retreat engage. Below roughly
-      <code>stop + 3rem</code> the column stops matching its stop and tracks the viewport
+      <code>stop + 3rem</code> the column stops matching its stop and tracks the container
       instead, keeping a 1.5rem gutter on each side.</p>
   </div>
   <div class="col user"><div class="bubble" id="u">User message</div></div>
@@ -115,7 +117,7 @@ function render() {
     '  --dg-width-preset: ' + preset + ';\n' +
     '  --dg-width-custom: ' + custom + ';\n' +
     '  --thread-content-max-width:\n' +
-    '    min(var(--dg-width-preset, var(--dg-width-custom)), calc(100vw - 3rem));\n' +
+    '    min(var(--dg-width-preset, var(--dg-width-custom)), calc(100cqi - 3rem));\n' +
     '}';
   document.getElementById('cfg').textContent = css;
   requestAnimationFrame(report.bind(null, css));
@@ -133,7 +135,7 @@ function report(css) {
 
   const axis = Math.max(Math.abs(a.c - u.c), Math.abs(a.c - c.c)) <= 1;
   const overflow = document.documentElement.scrollWidth > window.innerWidth + 1;
-  const cap = window.innerWidth - 48;
+  const cap = Math.round(m.getBoundingClientRect().width) - 48;
   const stop = PRESETS[chosen][1] === 'initial' ? slider.value * 16 : parseInt(PRESETS[chosen][1]) * 16;
   const retreat = cap < stop;
   const mark = (ok, t) => '<span class="' + (ok ? 'ok' : 'bad') + '">' + (ok ? 'PASS' : 'FAIL') + '</span>  ' + t;
@@ -141,7 +143,7 @@ function report(css) {
   document.getElementById('out').innerHTML =
     'injected by Stylus:\n' + css.replace(/</g, '&lt;') + '\n\n' +
     'computed --thread-content-max-width : ' + val + '\n' +
-    'viewport                            : ' + window.innerWidth + 'px  (cap = 100vw - 3rem = ' + cap + 'px)\n' +
+    'viewport / container                : ' + window.innerWidth + ' / ' + Math.round(m.getBoundingClientRect().width) + 'px  (cap = 100cqi - 3rem = ' + cap + 'px)\n' +
     'column width                        : ' + ruler.w + 'px' +
       (retreat ? '   <- responsive retreat active' : '') + '\n' +
     'assistant / user / composer centres : ' + a.c + ' / ' + u.c + ' / ' + c.c + '\n\n' +
@@ -149,7 +151,7 @@ function report(css) {
     mark(axis, 'assistant, user and composer share one centre axis') + '\n' +
     mark(!overflow, 'no horizontal page overflow  (scrollWidth ' +
          document.documentElement.scrollWidth + ' vs innerWidth ' + window.innerWidth + ')') + '\n' +
-    mark(ruler.w <= Math.min(stop, cap) + 33, 'column never exceeds min(stop, viewport - 3rem)');
+    mark(ruler.w <= Math.min(stop, cap) + 33, 'column never exceeds min(stop, container - 3rem)');
 }
 
 addEventListener('resize', () => render());

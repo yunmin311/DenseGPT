@@ -63,7 +63,9 @@ DenseGPT 从两端同时解决。
 
 滑块**只在**档位选 Custom 时生效，四个推荐档一律忽略它。
 
-每个值都包在 `min(…, calc(100vw - 3rem))` 里，窗口变窄时列宽自动收缩，不会把文字顶到边缘。它接的是 ChatGPT 自己的 `--thread-content-max-width`，所以助手消息、你的消息和输入框始终共用同一条中心轴线；又因为它作用于 `max-width`，值比可用空间大时只是失效，绝不会造成横向溢出。
+每个值都包在 `min(…, calc(100cqi - 3rem))` 里，列变窄时自动收缩，不会把文字顶到边缘。它接的是 ChatGPT 自己的 `--thread-content-max-width`，所以助手消息、你的消息和输入框始终共用同一条中心轴线。
+
+`100cqi` 量的是正文容器宽度，**不是窗口宽度**。2.5.0 之前这里写的是 `100vw`，而 `100vw` 把侧栏也算进去了——在中等尺寸窗口上选 Ultra，正文列会去要比 `main` 实际拥有的还多的空间。侧栏被挤压过的话，见 [2.5.1](CHANGELOG.md)。
 
 [`docs/width-preview.html`](docs/width-preview.html) 是一个独立页面——双击直接打开、不用服务器——可以在不碰 ChatGPT 的情况下挑 Custom 值。
 
@@ -154,6 +156,7 @@ On request these override the default: "explain in detail" = full depth; "write 
 | 没有 **Configure** 齿轮 | 元数据块没解析成功。从 raw 链接重装。 |
 | 完全没有样式 | ChatGPT 改了作用域属性。见 [`docs/selectors.md`](docs/selectors.md)，改一行即可。 |
 | 宽度不生效 | ChatGPT 新增了宽度变量的声明点。用 [`docs/selectors.md`](docs/selectors.md) 里的祖先链探针定位。 |
+| 宽档位下侧栏被挤窄 | 2.5.1 已修——原来的收缩项量的是窗口宽度，把侧栏也算了进去。在 Stylus 里更新即可。更新后仍出现的话，**趁它还在屏幕上**跑 [`docs/selectors.md`](docs/selectors.md) 里的布局压力探针。 |
 
 [`docs/content-width.md`](docs/content-width.md) 里有一段控制台自检脚本，上面这些都能用 computed style 直接判定，不用猜。
 

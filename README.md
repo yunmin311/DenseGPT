@@ -67,11 +67,15 @@ Replaces the Widescreen extension. Stylus → DenseGPT → **Configure**.
 
 The slider is read **only** when the preset is Custom; the four presets ignore it.
 
-Every value is wrapped in `min(…, calc(100vw - 3rem))`, so a narrow window shrinks
-the column instead of pinning text to the edges. It feeds ChatGPT's own
+Every value is wrapped in `min(…, calc(100cqi - 3rem))`, so a narrow column shrinks
+instead of pinning text to the edges. It feeds ChatGPT's own
 `--thread-content-max-width`, so assistant messages, your messages and the composer
-stay on one centre axis — and because it is a `max-width`, a value wider than the
-available space is simply inert and can never cause horizontal overflow.
+stay on one centre axis.
+
+`100cqi` is the width of the thread container, **not** the window. Up to 2.5.0 this
+was `100vw`, which includes the sidebar — at Ultra on a mid-sized window that let
+the column ask for more room than `main` actually had. See
+[2.5.1](CHANGELOG.md) if the sidebar ever looks squeezed.
 
 [`docs/width-preview.html`](docs/width-preview.html) is a standalone page — open it
 directly, no server — for picking a Custom value without touching ChatGPT.
@@ -174,6 +178,7 @@ shipped. Four colour values exist in the entire file.
 | No **Configure** gear | The metadata block failed to parse. Reinstall from the raw URL. |
 | Nothing is styled at all | ChatGPT renamed its scope attribute. See [`docs/selectors.md`](docs/selectors.md) — a one-line repair. |
 | Width does nothing | ChatGPT added a new declaration site for its width variable. The ancestor-chain probe in [`docs/selectors.md`](docs/selectors.md) finds it. |
+| Sidebar squeezed at a wide preset | Fixed in 2.5.1 — the clamp used to measure the window, sidebar included. Update in Stylus. If it survives the update, run the layout-pressure probe in [`docs/selectors.md`](docs/selectors.md) *while it is on screen*. |
 
 [`docs/content-width.md`](docs/content-width.md) carries a console self-test that
 reports all of the above from computed styles rather than guesswork.

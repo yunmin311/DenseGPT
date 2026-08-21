@@ -79,7 +79,7 @@ and the stylesheet reads it:
 ```css
 main {
   --thread-content-max-width:
-    min(var(--dg-width-preset, var(--dg-width-custom)), calc(100vw - 3rem)) !important;
+    min(var(--dg-width-preset, var(--dg-width-custom)), calc(100cqi - 3rem)) !important;
 }
 ```
 
@@ -88,11 +88,27 @@ A custom property set to `initial` computes to the guaranteed-invalid value, so
 when Custom is selected, and uses the preset otherwise. The four presets ignore the
 slider entirely.
 
-`min(…, calc(100vw - 3rem))` is the responsive retreat: below roughly
-`stop + 3rem` of window width the column tracks the viewport instead of its stop,
-keeping a 1.5rem gutter each side. Because the value feeds a `max-width`, a stop
-wider than the available column is inert — it can never force horizontal overflow,
-and with the sidebar open the column stays container-limited as usual.
+`min(…, calc(100cqi - 3rem))` is the responsive retreat: below roughly
+`stop + 3rem` of available column the value tracks the column instead of its stop,
+keeping a 1.5rem gutter each side.
+
+**The second term measures the container, not the window.** Up to 2.5.0 it was
+`calc(100vw - 3rem)`, and `100vw` is the whole window *including the sidebar*, so
+the clamp allowed a column wider than the space `<main>` actually has. Measured in
+a mock of this layout: a 1440px window with a 260px sidebar leaves `main` 1143px
+while the Ultra clamp still permitted 1248px. That gap is inert only while every
+consumer of the variable treats it as a `max-width`; anything treating it as a
+`width` overflows by the difference, and an overflowing thread is the pressure
+that can squeeze a shrinkable sibling — the sidebar. See [2.5.1 in the
+changelog](../CHANGELOG.md).
+
+`100cqi` is the inline size of the nearest query container. ChatGPT declares one
+named `main` — the `@w-lg/main:` variant in the turn wrapper's class list is proof
+of it — so the clamp now tracks the real column. Container inline size is definite
+by containment, so unlike a percentage it can never fall into cyclic sizing inside
+an auto-sized grid track or a shrink-to-fit box; with no container ancestor at all
+it falls back to the small viewport, which is the old behaviour rather than a
+broken one.
 
 ## Install and update — the part that actually bites
 
@@ -214,14 +230,15 @@ values, so steps 3 to 6 can be read off it rather than eyeballed.
 
 ### Layout measurements
 
-Presets at a 1920px window (viewport 1898px after the scrollbar):
+Presets at a 1920px window (viewport 1898px after the scrollbar, container wider
+than every stop so the first term wins):
 
 | Preset | Computed variable | Column |
 | --- | --- | --- |
-| Reading | `min(44rem, calc(100vw - 3rem))` | 704px |
-| Balanced | `min(54rem, calc(100vw - 3rem))` | 864px |
-| Wide | `min(66rem, calc(100vw - 3rem))` | 1056px |
-| Ultra | `min(78rem, calc(100vw - 3rem))` | 1248px |
+| Reading | `min(44rem, calc(100cqi - 3rem))` | 704px |
+| Balanced | `min(54rem, calc(100cqi - 3rem))` | 864px |
+| Wide | `min(66rem, calc(100cqi - 3rem))` | 1056px |
+| Ultra | `min(78rem, calc(100cqi - 3rem))` | 1248px |
 
 Custom, with the preset writing `initial`:
 

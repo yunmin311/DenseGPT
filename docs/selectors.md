@@ -34,7 +34,8 @@ That was wrong: the dump only walks elements whose computed value differs from
 their parent's, and at the time the whole thread already shared one value, so the
 turn-level redeclaration was invisible. With the variable actually working, the
 symptom appeared immediately — `main` computed
-`min(54rem, calc(100vw - 3rem))` while the assistant column computed `40rem` and
+`min(54rem, calc(100vw - 3rem))` — the clamp of the day; 2.5.1 replaced the
+viewport term with `100cqi` — while the assistant column computed `40rem` and
 measured 560px.
 
 The second declaration site is the turn wrapper, via a Tailwind arbitrary
@@ -102,6 +103,70 @@ Everything that reads the variable moves together — assistant messages, user
 messages, composer — **as long as it reads the variable**. Anything that hard-codes
 a literal `max-width` instead is out of reach, and no amount of guessing at class
 names will fix it; the check below reports which.
+
+## Layout-pressure probe — sidebar squeezed at a wide preset
+
+Symptom: at a wide preset the left sidebar is narrower than it should be, and a
+reload restores it. 2.5.1 removed the one cause that was provable from our side —
+the clamp measured `100vw`, which includes the sidebar, so it permitted a column
+wider than the space `<main>` has. Whether that was the *only* path is not
+settled, because the failure needs a live account to reproduce.
+
+**Run this while the squeeze is on screen.** It reports who is under pressure and
+from what, structurally — no class names, so it survives Tailwind churn.
+
+```js
+(() => {
+  const main = document.querySelector('main');
+  if (!main) return console.log('no <main>');
+  const cs = e => getComputedStyle(e);
+  const r = e => e.getBoundingClientRect();
+  const box = e => Math.round(r(e).width);
+  const row = (k, v) => console.log(k.padEnd(34) + v);
+
+  row('window / documentElement.scrollWidth',
+      innerWidth + ' / ' + document.documentElement.scrollWidth +
+      (document.documentElement.scrollWidth > innerWidth + 1 ? '   <- page overflows' : ''));
+
+  // the sidebar is whatever shares a parent with <main>
+  const parent = main.parentElement;
+  console.log('layout parent: display=' + cs(parent).display +
+              ' gridCols=' + cs(parent).gridTemplateColumns);
+  [...parent.children].forEach((el, i) => {
+    const c = cs(el);
+    row('  child ' + i + (el === main ? ' <main>' : ' <' + el.tagName.toLowerCase() + '>'),
+        box(el) + 'px  flex=' + c.flex + ' minW=' + c.minWidth + ' overflow=' + c.overflowX);
+  });
+
+  const mc = cs(main);
+  row('main container-type', mc.containerType + '  name=' + mc.containerName);
+  row('main width / scrollWidth', box(main) + ' / ' + main.scrollWidth +
+      (main.scrollWidth > main.clientWidth + 1 ? '   <- main content overflows' : ''));
+  row('--thread-content-max-width', mc.getPropertyValue('--thread-content-max-width').trim() || '(empty)');
+
+  // every descendant of main that sticks out past main's own box
+  const right = r(main).right, left = r(main).left;
+  const out = [...main.querySelectorAll('*')].filter(e => {
+    const b = r(e);
+    return b.width > 0 && (b.right > right + 1 || b.left < left - 1);
+  }).slice(0, 8);
+  console.log(out.length ? 'elements wider than main:' : 'nothing sticks out of main');
+  out.forEach(e => {
+    const c = cs(e);
+    console.log('  <' + e.tagName.toLowerCase() + '>  w=' + box(e) +
+                '  width=' + c.width + ' maxWidth=' + c.maxWidth + ' minWidth=' + c.minWidth);
+  });
+})();
+```
+
+What to read off it:
+
+| Line | Means |
+| --- | --- |
+| a sibling of `<main>` narrower than its usual width, with `flex` allowing shrink | the sidebar is being squeezed by its own flex line, not painted wrong |
+| `main content overflows` | something inside the thread is wider than the column — check the list below it |
+| an element whose `width` (not `maxWidth`) resolves to the preset value | ChatGPT consumes the variable as a hard width there; the clamp has to stay container-relative |
+| nothing sticks out, sidebar still narrow | not a width-pressure problem — DenseGPT is probably not the cause, and the same probe with the style disabled will show it |
 
 ## Console check
 

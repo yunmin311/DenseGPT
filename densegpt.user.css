@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           DenseGPT
 @namespace      github.com/yunmin311/DenseGPT
-@version        2.5.0
+@version        2.5.1
 @description    Verified compact reading layout for ChatGPT, two neutral tokens, four width presets plus a free width slider. No density algorithm, no theme detection, no page background or text colour changes.
 @author         yunmin311
 @license        MIT
@@ -237,11 +237,28 @@
    slider exactly when Custom is selected, and uses the preset
    otherwise. The slider is ignored by the four presets.
 
-   The result is wrapped in min(..., calc(100vw - 3rem)) so a narrow
-   window shrinks the column instead of pinning text to the edges,
-   keeping a 1.5rem gutter. This is a max-width, so a value wider than
-   the available column is simply inert - it can never force overflow,
-   and with the sidebar open the column is container-limited as usual.
+   The second term is the responsive retreat: a narrow window shrinks
+   the column instead of pinning text to the edges, keeping a 1.5rem
+   gutter.
+
+   It measures the container, not the window. Up to 2.5.0 it was
+   calc(100vw - 3rem), and 100vw is the whole window including the
+   sidebar - so the clamp allowed a column wider than the space <main>
+   actually has. Measured in a mock of this layout: a 1440px window
+   with a 260px sidebar leaves main 1143px, while the Ultra clamp
+   still permitted 1248px. That is only inert while every consumer
+   uses the variable as a max-width; anything using it as a width
+   overflows by that difference, and an overflowing thread is exactly
+   the pressure that can squeeze a shrinkable sibling - the sidebar.
+
+   100cqi is the inline size of the nearest query container. ChatGPT
+   declares one named `main` (the @w-lg/main: variant in the turn
+   wrapper's class list is proof of it), so the clamp now tracks the
+   real column. Container inline size is definite by containment, so
+   unlike a percentage it can never fall into cyclic sizing inside an
+   auto-sized grid track or a shrink-to-fit box. With no container
+   ancestor at all, cqi falls back to the small viewport - the old
+   behaviour, not a broken one.
 
    Option labels deliberately carry no rem numbers. Stylus stores a
    select choice by its label, so a label that names its own value
@@ -252,7 +269,7 @@
 main,
 main [class*="--thread-content-max-width:"] {
   --thread-content-max-width:
-    min(var(--dg-width-preset, var(--dg-width-custom)), calc(100vw - 3rem)) !important;
+    min(var(--dg-width-preset, var(--dg-width-custom)), calc(100cqi - 3rem)) !important;
 }
 
 }

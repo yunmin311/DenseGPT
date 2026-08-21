@@ -3,6 +3,36 @@
 Notable changes, including the ones that failed. A userstyle lives against a DOM
 it does not control, so what did not work is as useful as what did.
 
+## 2.5.1
+
+**The width clamp measured the window instead of the column.** Reported symptom:
+at Ultra the left sidebar was intermittently squeezed, and a reload cleared it.
+
+The responsive term was `calc(100vw - 3rem)`, and `100vw` is the whole window
+*including the sidebar*, so the clamp permitted a column wider than the space
+`<main>` actually has. Measured in a mock of the same flex layout: a 1440px window
+with a 260px sidebar leaves `main` 1143px, while the Ultra clamp still allowed
+1248px — 105px of demand with nowhere to put it. That gap is inert only for as
+long as every consumer of `--thread-content-max-width` treats it as a `max-width`;
+in the same mock, one consumer using it as a `width` overflowed by exactly that
+difference, and an overflowing thread is the pressure that can squeeze a
+shrinkable sibling.
+
+Now `calc(100cqi - 3rem)` — the inline size of the nearest query container.
+ChatGPT declares one named `main`; the `@w-lg/main:` variant in the turn wrapper's
+class list is the evidence for it. Container inline size is definite by
+containment, so unlike a percentage the term can never fall into cyclic sizing
+inside an auto-sized grid track or a shrink-to-fit box, and with no container
+ancestor at all it degrades to the small viewport, which is the old behaviour
+rather than a broken one.
+
+Verified: in a headless mock the container-relative clamp never exceeds the
+available column at 1280 / 1440 / 1920, in block, flex-item, grid-item and padded
+containing blocks, where the viewport-relative clamp did. Not verified: that this
+was the only path to the squeeze — the live failure was not reproducible without
+the account, so `docs/selectors.md` now carries a capture probe to run while it is
+on screen.
+
 ## 2.5.0
 
 Blockquote colours restored to the 1.1 values: `border-left: 3px solid

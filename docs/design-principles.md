@@ -109,9 +109,11 @@ has to be able to land on any number its users were already using.
 | Ultra | large display | `78rem` | 1248px | ~156 ch | ~78 ch |
 | Custom | any | 36–90rem | 576–1440px | ~72–180 ch | ~36–90 ch |
 
-Everything is `min(<value>, calc(100vw - 3rem))`. The second term is the responsive
-retreat: a narrow window shrinks the column rather than pinning text to the edges,
-and 3rem leaves a 1.5rem gutter on each side once the column is centred. The
+Everything is `min(<value>, calc(100cqi - 3rem))`. The second term is the
+responsive retreat: a narrow column shrinks rather than pinning text to the edges,
+and 3rem leaves a 1.5rem gutter on each side once the column is centred. It
+measures the container (`100cqi`), not the window — `100vw` includes the sidebar,
+so up to 2.5.0 the clamp permitted a column wider than the space `<main>` has. The
 mechanism, and why a preset and a slider can coexist without conditionals, is in
 [`content-width.md`](content-width.md).
 
