@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           DenseGPT
 @namespace      github.com/yunmin311/DenseGPT
-@version        2.4.0
+@version        2.5.0
 @description    Verified compact reading layout for ChatGPT, two neutral tokens, four width presets plus a free width slider. No density algorithm, no theme detection, no page background or text colour changes.
 @author         yunmin311
 @license        MIT
@@ -123,9 +123,9 @@
   background-image: none !important;
   text-indent: 0 !important;
 
-  border-left: 3px solid rgba(60, 82, 115, 0.72) !important;
+  border-left: 3px solid rgba(100, 116, 139, 0.85) !important;
   border-radius: 6px !important;
-  background: rgba(80, 100, 130, 0.065) !important;
+  background-color: rgba(100, 116, 139, 0.09) !important;
   padding: 0.55em 0.85em !important;
   margin: 0.65em 0 !important;
   color: inherit !important;
