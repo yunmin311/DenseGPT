@@ -18,95 +18,46 @@ derived, multiplied or computed at runtime.
 | `ul`, `ol` | `margin-top: 0.35em` · `margin-bottom: 0.45em` |
 | `li` | `margin: 0.12em 0` |
 | inline code | `background: var(--dg-surface-soft)` · `padding: 0.08em 0.28em` · `border-radius: 4px` · no border, no shadow |
-| `blockquote` | left rule `3px solid var(--dg-edge)` · `background: var(--dg-surface-block)` · `padding: 0.55em 0.85em` · `margin: 0.65em 0` · `border-radius: 6px` · inherited text colour |
+| `blockquote` | left rule `3px solid rgba(60,82,115,0.72)` · `background: rgba(80,100,130,0.065)` · `padding: 0.55em 0.85em` · `margin: 0.65em 0` · `border-radius: 6px` · inherited text colour |
 | `em`, `i` | `font-weight: 500` — italic alone does not separate at this line-height. Bold-italic is excluded so it stays bold. |
 | `hr` | `1px solid var(--dg-edge-soft)` · `margin: 1.1em 0` — a hairline, not a chapter break |
 
 Anything not in that table is ChatGPT's own styling, untouched.
 
-## One set of tokens
+## Colour
 
-Two inks. Four surfaces derived from them. Declared once, on the assistant markdown
-root:
+Two neutral tokens, declared once on the assistant markdown root:
 
 ```css
---dg-ink:           currentColor;
---dg-ink-cite:      color-mix(in srgb, currentColor 52%, #5b7196);
-
---dg-surface-soft:  color-mix(in srgb, var(--dg-ink) 5%, transparent);
---dg-surface-block: color-mix(in srgb, var(--dg-ink-cite) 7%, transparent);
---dg-edge:          color-mix(in srgb, var(--dg-ink-cite) 25%, transparent);
---dg-edge-soft:     color-mix(in srgb, var(--dg-ink) 18%, transparent);
+--dg-surface-soft: color-mix(in srgb, currentColor 5%, transparent);   /* inline code fill */
+--dg-edge-soft:    color-mix(in srgb, currentColor 18%, transparent);  /* horizontal rule */
 ```
 
-| Token | Used by |
-| --- | --- |
-| `--dg-surface-soft` | inline code fill |
-| `--dg-surface-block` | blockquote fill |
-| `--dg-edge` | blockquote left rule |
-| `--dg-edge-soft` | horizontal rule |
+Both are plain `currentColor` at low alpha, so lightness comes from the page's own
+text and both themes adapt with no theme detection.
 
-Nothing else may define a colour. Every token is anchored to `currentColor`, so
-lightness comes from the page's own text and both themes adapt with no theme
-detection.
+**The blockquote is not derived from a token.** Its two colours are literals, and
+they are the values that were accepted by eye in the 1.2 baseline:
 
-### Type is a trace of hue, not a colour
-
-A category is separated by shifting the *same* ink toward a desaturated hue, never
-by giving it a colour of its own. `--dg-ink-cite` is 52% currentColor and 48% of a
-desaturated blue: first glance grey, second glance faintly blue-grey.
-
-**How much hue survives is a product, not a ratio.** The anchor `#5b7196` has a
-blue-minus-red spread of 59 levels; `currentColor` is neutral and contributes
-none. What actually reaches the screen is:
-
-```
-B − R  ≈  surface alpha  ×  anchor share  ×  59
+```css
+border-left: 3px solid rgba(60, 82, 115, 0.72);
+background:  rgba(80, 100, 130, 0.065);
 ```
 
-Measured in Chrome, composited over ChatGPT's own light and dark backgrounds —
-the numbers come out identical in both, because both ends are anchored to the
-page's own text colour:
+One low-alpha value each, which reads correctly over both the light and the dark
+page background, so this needs no theme rule either.
 
-| | anchor share | surface α | rule α | surface B−R | rule B−R | rule contrast |
-| --- | --- | --- | --- | --- | --- | --- |
-| until 2.1.1 | 15% | 6% | 35% | **0.5** | 3.1 | 79 / 65 |
-| 2.2.0 | 35% | 7% | 35% | **1.4** | 7.2 | 72 / 57 |
-| 2.3.0 | 48% | 7% | 25% | **2.0** | 7.0 | 48 / 37 |
+They are literals on purpose. Three versions tried to derive them from a shared
+"cite ink" - 15/48/6/7 percent combinations with the rule at 35 then 25 percent -
+each arithmetically correct, each measured, and none of them looked like the
+version that had already been approved. When a colour has been accepted as a
+literal, storing it as a literal is the honest representation; a derivation that
+has to be re-tuned every round is not a system, it is a detour. There is no cite
+ink token left, because it fed nothing else.
 
-Rule contrast is the rule's distance from the page background, light / dark.
-
-Half a level of separation out of 255 is arithmetically a tint and visually plain
-grey — which is why the blockquote read as grey through every earlier version, no
-matter what the spec said. Two levels is where the fill starts to be readable as
-blue-grey rather than grey.
-
-**Within one ink, a rule's blueness and its weight move together.** Both scale with
-the same alpha, so the ratio between them is fixed by the ink and only the ink.
-Raising the anchor share from 35% to 48% made the rule bluer at any given alpha,
-so holding its blueness at 7 meant dropping alpha from 35% to 25% — and that costs
-a third of the rule's contrast. Wanting the old weight back means accepting a
-bluer rule (B−R ≈ 9.9 at 35%). There is no setting that gives both.
-
-The formula is the tuning lever: for a target separation, pick
-`alpha × share = target / 59`. Two levels needs 7% × 48%; three needs 7% × 72% or
-9% × 56%. Pushing either past its band trades "reads as grey" for visibility, so
-the ceiling is a design decision, not a number to optimise.
-
-The constraints that matter, in order:
-
-| Constraint | Value |
-| --- | --- |
-| surface alpha | 5–7% |
-| anchor share | as much as the product allows while staying grey at a glance |
-| saturation of the anchor | very low |
-| lightness across types | identical (all inherit from `currentColor`) |
-| edges and icons | 18–35%, the only things allowed to deepen |
-
-Earlier versions had three unrelated slate blues — `rgba(60,82,115)`,
-`rgba(80,100,130)`, `rgba(100,116,139)` — one per element, at three different
-lightnesses. That is what made the greys look dirty. There is now exactly one
-literal colour in the stylesheet: the hue anchor.
+What has colour, in full: inline code fill, the blockquote fill and its left rule,
+the horizontal rule. Body text, headings, lists, links, tables, fenced code blocks
+and app blocks are all untouched and stay ChatGPT's own.
 
 ### Typed surfaces — investigated, not shipped
 
@@ -132,8 +83,8 @@ markdown rhythm, one quote/code tint pair, and content width.
   `prefers-color-scheme`. A tint that is conditional on a guess about the theme
   renders over the wrong background as soon as the guess is wrong — that is what
   turned the blockquote into a grey bar in 1.0.0.
-- **No second visual language.** One semantic level, one token. No rule defines a
-  colour of its own.
+- **No second visual language.** Four colour values in the whole file: two neutral
+  tokens and the blockquote's two literals. Nothing else defines a colour.
 - **No fenced code block changes.** Background, colours, font size and syntax
   highlighting stay exactly as ChatGPT ships them. `:not(pre) > code` is the guard
   that keeps the inline-code rule off them.
@@ -170,11 +121,10 @@ mostly code, tables and lists, where width pays for itself and long prose lines 
 rare. For continuous Chinese prose, Reading now sits just at the upper edge of
 comfort — which is what the 1.9.1 narrowing was for.
 
-It is applied by one rule, `main { --thread-content-max-width: … !important }`,
-through ChatGPT's own custom property. A live DOM dump confirmed that `<main>` is
-the only element that declares that property and that the composer sits inside it,
-so messages and composer inherit the same value from the same node and stay on one
-centre axis — see [`selectors.md`](selectors.md) for the measurement.
+It is applied through ChatGPT's own `--thread-content-max-width` custom property,
+on `main` as the inheritance root plus the turn wrapper that redeclares it on
+itself — see [`selectors.md`](selectors.md) for why both are needed and for the
+ancestor-chain probe that finds any further declaration site.
 
 ## History
 
