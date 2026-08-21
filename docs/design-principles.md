@@ -31,10 +31,10 @@ root:
 
 ```css
 --dg-ink:           currentColor;
---dg-ink-cite:      color-mix(in srgb, currentColor 85%, #5b7196);
+--dg-ink-cite:      color-mix(in srgb, currentColor 65%, #5b7196);
 
 --dg-surface-soft:  color-mix(in srgb, var(--dg-ink) 5%, transparent);
---dg-surface-block: color-mix(in srgb, var(--dg-ink-cite) 6%, transparent);
+--dg-surface-block: color-mix(in srgb, var(--dg-ink-cite) 7%, transparent);
 --dg-edge:          color-mix(in srgb, var(--dg-ink-cite) 35%, transparent);
 --dg-edge-soft:     color-mix(in srgb, var(--dg-ink) 18%, transparent);
 ```
@@ -52,17 +52,43 @@ detection.
 
 ### Type is a trace of hue, not a colour
 
-A category is separated by shifting the *same* ink a few percent, never by giving
-it a colour of its own. `--dg-ink-cite` is 85% currentColor and 15% of a
-desaturated blue — enough that a quoted source does not read as a piece of code,
-not enough to register as blue. First impression stays grey.
+A category is separated by shifting the *same* ink toward a desaturated hue, never
+by giving it a colour of its own. `--dg-ink-cite` is 65% currentColor and 35% of a
+desaturated blue: first glance grey, second glance faintly blue-grey.
+
+**How much hue survives is a product, not a ratio.** The anchor `#5b7196` has a
+blue-minus-red spread of 59 levels; `currentColor` is neutral and contributes
+none. What actually reaches the screen is:
+
+```
+B − R  ≈  surface alpha  ×  anchor share  ×  59
+```
+
+Measured in Chrome, composited over ChatGPT's own light and dark backgrounds —
+the numbers come out identical in both, because both ends are anchored to the
+page's own text colour:
+
+| | anchor share | alpha | surface B−R | left rule B−R |
+| --- | --- | --- | --- | --- |
+| until 2.1.1 | 15% | 6% | **0.53** | 3.1 |
+| 2.2.0 | 35% | 7% | **1.45** | 7.2 |
+
+Half a level of separation out of 255 is arithmetically a tint and visually plain
+grey — which is exactly why the old blockquote read as grey no matter what the
+spec said. The **left rule** is where the hue is legible, because 35% of the ink
+lands on the page directly instead of through a 7% veil.
+
+The formula is the tuning lever: for a target separation, pick
+`alpha × share = target / 59`. Two levels needs 7% × 48%; three needs 7% × 72% or
+9% × 56%. Pushing either past its band trades "reads as grey" for visibility, so
+the ceiling is a design decision, not a number to optimise.
 
 The constraints that matter, in order:
 
 | Constraint | Value |
 | --- | --- |
-| surface alpha | 5–6% — never outside 5–7% |
-| hue shift between types | ≤ 15% of a desaturated anchor |
+| surface alpha | 5–7% |
+| anchor share | as much as the product allows while staying grey at a glance |
 | saturation of the anchor | very low |
 | lightness across types | identical (all inherit from `currentColor`) |
 | edges and icons | 18–35%, the only things allowed to deepen |
