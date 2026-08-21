@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           DenseGPT
 @namespace      github.com/yunmin311/DenseGPT
-@version        2.2.0
+@version        2.3.0
 @description    Verified compact reading layout for ChatGPT, one shared set of surface tokens, four width presets plus a free width slider. No density algorithm, no theme detection, no page background or text colour changes.
 @author         yunmin311
 @license        MIT
@@ -48,10 +48,10 @@
    anchor's real contribution is (its share of the ink) x (the surface
    alpha). At 15% x 6% that is 0.9%, about half a level of separation
    between the red and blue channels out of 255 - arithmetically a
-   tint, visually plain grey. The anchor share is now 35% against a 7%
-   surface, so the blue contributes 2.45%, roughly three times as much,
-   which is still under a two-level separation. The edge is where the
-   hue is actually legible, because 35% of the ink lands directly.
+   tint, visually plain grey. The anchor share is now 48% against a 7%
+   surface, which measures two levels: the point where the fill reads
+   as blue-grey rather than grey. The rule sits at 25% of the same ink,
+   chosen to hold its blueness where it was rather than to deepen it.
 
    Surface alpha stays in 5-7%. Edges are the only thing allowed to
    deepen, and only to 18-35%.
@@ -59,12 +59,12 @@
 
 [data-message-author-role="assistant"] .markdown {
   --dg-ink: currentColor;
-  --dg-ink-cite: color-mix(in srgb, currentColor 65%, #5b7196);
+  --dg-ink-cite: color-mix(in srgb, currentColor 52%, #5b7196);
 
   --dg-surface-soft: color-mix(in srgb, var(--dg-ink) 5%, transparent);
   --dg-surface-block: color-mix(in srgb, var(--dg-ink-cite) 7%, transparent);
 
-  --dg-edge: color-mix(in srgb, var(--dg-ink-cite) 35%, transparent);
+  --dg-edge: color-mix(in srgb, var(--dg-ink-cite) 25%, transparent);
   --dg-edge-soft: color-mix(in srgb, var(--dg-ink) 18%, transparent);
 }
 

@@ -31,11 +31,11 @@ root:
 
 ```css
 --dg-ink:           currentColor;
---dg-ink-cite:      color-mix(in srgb, currentColor 65%, #5b7196);
+--dg-ink-cite:      color-mix(in srgb, currentColor 52%, #5b7196);
 
 --dg-surface-soft:  color-mix(in srgb, var(--dg-ink) 5%, transparent);
 --dg-surface-block: color-mix(in srgb, var(--dg-ink-cite) 7%, transparent);
---dg-edge:          color-mix(in srgb, var(--dg-ink-cite) 35%, transparent);
+--dg-edge:          color-mix(in srgb, var(--dg-ink-cite) 25%, transparent);
 --dg-edge-soft:     color-mix(in srgb, var(--dg-ink) 18%, transparent);
 ```
 
@@ -53,7 +53,7 @@ detection.
 ### Type is a trace of hue, not a colour
 
 A category is separated by shifting the *same* ink toward a desaturated hue, never
-by giving it a colour of its own. `--dg-ink-cite` is 65% currentColor and 35% of a
+by giving it a colour of its own. `--dg-ink-cite` is 52% currentColor and 48% of a
 desaturated blue: first glance grey, second glance faintly blue-grey.
 
 **How much hue survives is a product, not a ratio.** The anchor `#5b7196` has a
@@ -68,15 +68,25 @@ Measured in Chrome, composited over ChatGPT's own light and dark backgrounds —
 the numbers come out identical in both, because both ends are anchored to the
 page's own text colour:
 
-| | anchor share | alpha | surface B−R | left rule B−R |
-| --- | --- | --- | --- | --- |
-| until 2.1.1 | 15% | 6% | **0.53** | 3.1 |
-| 2.2.0 | 35% | 7% | **1.45** | 7.2 |
+| | anchor share | surface α | rule α | surface B−R | rule B−R | rule contrast |
+| --- | --- | --- | --- | --- | --- | --- |
+| until 2.1.1 | 15% | 6% | 35% | **0.5** | 3.1 | 79 / 65 |
+| 2.2.0 | 35% | 7% | 35% | **1.4** | 7.2 | 72 / 57 |
+| 2.3.0 | 48% | 7% | 25% | **2.0** | 7.0 | 48 / 37 |
+
+Rule contrast is the rule's distance from the page background, light / dark.
 
 Half a level of separation out of 255 is arithmetically a tint and visually plain
-grey — which is exactly why the old blockquote read as grey no matter what the
-spec said. The **left rule** is where the hue is legible, because 35% of the ink
-lands on the page directly instead of through a 7% veil.
+grey — which is why the blockquote read as grey through every earlier version, no
+matter what the spec said. Two levels is where the fill starts to be readable as
+blue-grey rather than grey.
+
+**Within one ink, a rule's blueness and its weight move together.** Both scale with
+the same alpha, so the ratio between them is fixed by the ink and only the ink.
+Raising the anchor share from 35% to 48% made the rule bluer at any given alpha,
+so holding its blueness at 7 meant dropping alpha from 35% to 25% — and that costs
+a third of the rule's contrast. Wanting the old weight back means accepting a
+bluer rule (B−R ≈ 9.9 at 35%). There is no setting that gives both.
 
 The formula is the tuning lever: for a target separation, pick
 `alpha × share = target / 59`. Two levels needs 7% × 48%; three needs 7% × 72% or
