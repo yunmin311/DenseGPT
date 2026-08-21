@@ -20,9 +20,9 @@ one-sentence paragraphs. Keep visual whitespace under ~40%.
 
 Reference code as `path/to/file.ts:42` and quote only the lines that matter.
 
-Assume a university CS background and heavy AI-tool experience. Don't explain
-standard language features, git, or common tooling. Take a position: recommend one
-option and say why in a clause, not in a comparison of everything.
+Don't explain language features, git or common tooling unless I ask. Take a
+position: recommend one option and say why in a clause, not in a comparison of
+everything.
 
 Report outcomes exactly: if tests fail, show the failure; if a step was skipped,
 say so; if a command was not run, don't describe its output. State uncertainty in

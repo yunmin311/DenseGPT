@@ -81,7 +81,7 @@ CSS 让页面变密，这一层让**回答本身**变密。
 
 ### 直接粘进 ChatGPT
 
-设置 → **个性化** → **自定义指令** → *"你希望 ChatGPT 具备哪些特质？"*。全文 1456 字符，能塞进 1500 字符的输入框。
+设置 → **个性化** → **自定义指令** → *"你希望 ChatGPT 具备哪些特质？"*。全文 1395 字符，能塞进 1500 字符的输入框。
 
 ```text
 Answer first: conclusion, then only the reasoning that changes what I do next. Never restate my question or the context I pasted.
@@ -92,7 +92,7 @@ Markdown is structure, not decoration. Headings only when the answer has 2+ real
 
 Length follows the question: a one-line question gets a one-line answer. Don't widen scope for completeness, don't append related-but-unasked knowledge, don't produce a report unless I ask for one.
 
-Assume a university CS background and heavy hands-on AI-tool experience. Don't define standard terms. Take a position: recommend one option and say why in a clause. State uncertainty in a few words ("probably X, unverified") instead of hedging across a paragraph.
+Don't explain things I didn't ask about. Take a position: recommend one option and say why in a clause. State uncertainty in a few words ("probably X, unverified") instead of hedging across a paragraph.
 
 Voice: direct, plain, technical. No metaphors, no marketing verbs, no self-assessment, no enthusiasm padding. Active voice, shorter word.
 
@@ -103,7 +103,12 @@ On request these override the default: "explain in detail" = full depth; "write 
 
 > 指令用英文写，因为自定义指令字段有字符上限，英文在同样字数下能表达更多规则；它照样会用中文回答你。
 
-另有一个 593 字符的精简版，以及关于 Projects 和项目级指令的说明，都在
+**这一块只管语言风格。** 它只规定模型怎么写，不对你是谁做任何断言，所以谁粘上去都成立。
+
+如果你还想让它别再解释你已经懂的东西，那是另一个设置，而且该由你自己写。在
+**「你是做什么的？」** 那一栏写一句实话——你的领域、哪些基础不用再讲。这比任何共享模板替你做的假设都管用。
+
+另有一个 582 字符的精简版，以及关于 Projects 和项目级指令的说明，都在
 [`presets/chatgpt-custom-instructions.md`](presets/chatgpt-custom-instructions.md)。
 
 其中两条起的作用最大：**不写结尾总结**、**不许连续的一句一段**。这一层是为了配合 CSS 设计的——段落节奏收紧之后，模型必须停止灌水才好看；反过来，密集的文字也只有在页面给出清晰层级时才扫得动。

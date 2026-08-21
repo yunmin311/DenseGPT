@@ -91,7 +91,7 @@ The CSS makes the page denser. This makes the *answers* denser.
 ### Paste this into ChatGPT
 
 Settings → **Personalization** → **Custom instructions** → *"What traits should
-ChatGPT have?"*. 1456 characters, fits the 1500-character field.
+ChatGPT have?"*. 1395 characters, fits the 1500-character field.
 
 ```text
 Answer first: conclusion, then only the reasoning that changes what I do next. Never restate my question or the context I pasted.
@@ -102,7 +102,7 @@ Markdown is structure, not decoration. Headings only when the answer has 2+ real
 
 Length follows the question: a one-line question gets a one-line answer. Don't widen scope for completeness, don't append related-but-unasked knowledge, don't produce a report unless I ask for one.
 
-Assume a university CS background and heavy hands-on AI-tool experience. Don't define standard terms. Take a position: recommend one option and say why in a clause. State uncertainty in a few words ("probably X, unverified") instead of hedging across a paragraph.
+Don't explain things I didn't ask about. Take a position: recommend one option and say why in a clause. State uncertainty in a few words ("probably X, unverified") instead of hedging across a paragraph.
 
 Voice: direct, plain, technical. No metaphors, no marketing verbs, no self-assessment, no enthusiasm padding. Active voice, shorter word.
 
@@ -111,8 +111,16 @@ No images or diagrams unless I ask.
 On request these override the default: "explain in detail" = full depth; "write a report" = long form; "just the answer" = one line.
 ```
 
-A 593-character short version, plus notes on Projects and per-project instructions,
-is in [`presets/chatgpt-custom-instructions.md`](presets/chatgpt-custom-instructions.md).
+**This block is style only.** It tells the model how to write and claims nothing
+about who you are, so it is safe to paste as-is whoever you are.
+
+If you also want it to stop explaining things you already know, that is a separate
+setting and it is yours to write. Put one honest line in **"What do you do?"** -
+your field, and what you don't need re-explained. That does more than any
+assumption a shared preset could make on your behalf.
+
+A 582-character short version, and notes on Projects and per-project instructions,
+are in [`presets/chatgpt-custom-instructions.md`](presets/chatgpt-custom-instructions.md).
 
 Two rules do most of the work: **no closing summary** and **no consecutive
 one-sentence paragraphs**. The style layer is designed to pair with the CSS — tight
