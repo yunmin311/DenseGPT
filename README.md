@@ -39,10 +39,11 @@ The slider is read only when the preset is Custom; the four presets ignore it.
 Everything is wrapped in `min(…, calc(100vw - 3rem))`, so a narrow window shrinks
 the column instead of pinning text to the edges, keeping a 1.5rem gutter.
 
-One rule, `main { --thread-content-max-width: … !important }`, on the element a
-live DOM dump confirmed to be the only declaration site — messages and composer
-both inherit it from there and stay on one centre axis. It is a `max-width`, so a
-value wider than the available column is simply inert and can never force
+Two rules: one on `main`, the inheritance root, and one on the turn wrapper,
+which redeclares `--thread-content-max-width` on itself through a Tailwind
+arbitrary property and would otherwise shadow the inherited value. The second is
+matched by the variable's own name, not by a styling class. It is a `max-width`,
+so a value wider than the available column is simply inert and can never force
 horizontal overflow.
 
 [`docs/width-preview.html`](docs/width-preview.html) is a standalone page that
@@ -83,7 +84,7 @@ background · `"explain in detail"` overrides everything.
 ## Structure
 
 ```
-densegpt.user.css          the whole visual layer, 249 lines
+densegpt.user.css          the whole visual layer, 259 lines
 STYLE.md                   response spec
 presets/                   per-tool paste blocks
 docs/design-principles.md  the density model, and what is never compressed

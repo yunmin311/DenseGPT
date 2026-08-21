@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           DenseGPT
 @namespace      github.com/yunmin311/DenseGPT
-@version        2.1.0
+@version        2.1.1
 @description    Verified compact reading layout for ChatGPT, one shared set of surface tokens, four width presets plus a free width slider. No density algorithm, no theme detection, no page background or text colour changes.
 @author         yunmin311
 @license        MIT
@@ -182,22 +182,31 @@
 
 /* =======================  6. content width  =========================
 
-   Measured, not assumed. A live DOM dump reports:
+   Two rules, both needed, neither a blanket selector.
 
-     redeclared on 1 element(s): main=74rem [in main]
-     composer inside main: true
+   <main> is the inheritance root: a semantic landmark element, not a
+   utility class, so it is not a Tailwind-churn hook. Everything that
+   merely inherits the variable - the composer among them - is covered
+   from there.
 
-   So <main> is the single declaration site for
-   --thread-content-max-width, nothing below it shadows the value, and
-   the composer inherits from the same node as the messages. One rule
-   on <main> is therefore sufficient, and 1.4.0's universal selector
-   was overkill - it put an explicit declaration on every node in the
-   thread for no coverage the element it inherits from does not give.
+   But <main> is NOT the only declaration site. ChatGPT sets the
+   variable again further down, on the turn wrapper, through a Tailwind
+   arbitrary property:
 
-   <main> is a semantic landmark element, not a utility class, so this
-   is not a Tailwind-churn hook. If a future build declares the
-   variable deeper, the dump in docs/selectors.md reports it and the
-   fix is to add `main *`.
+     <div data-conversation-screenshot-content=""
+          class="[--thread-content-max-width:40rem]
+                 @w-lg/main:[--thread-content-max-width:48rem] mx-auto ...">
+
+   A declaration on the element itself beats an inherited value, so
+   that 40rem shadowed everything above it and the column measured
+   560px regardless of the preset. The second rule overrides the
+   variable exactly where it is redeclared, matched by the *variable's
+   own name* inside the class attribute rather than by any styling
+   class, so it survives Tailwind churn and it also catches the
+   container-query variant.
+
+   This is deliberately not `main *`. Only the nodes that redeclare the
+   variable need overriding; everything else inherits.
 
    Four recommended stops plus a free slider:
 
@@ -241,7 +250,8 @@
    tuned.
    ==================================================================== */
 
-main {
+main,
+main [class*="--thread-content-max-width:"] {
   --thread-content-max-width:
     min(var(--dg-width-preset, var(--dg-width-custom)), calc(100vw - 3rem)) !important;
 }

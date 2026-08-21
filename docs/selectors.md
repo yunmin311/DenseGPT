@@ -19,34 +19,84 @@ Every rule is the same scope plus a plain HTML element:
 | `:not(pre) > code` | Maximum. Structural. | Cannot break. |
 | `blockquote::before/::after`, `blockquote p::before/::after` | Maximum. | Cannot break. |
 
-## Content width — one rule, measured
+## Content width — two rules
 
 ```css
-main { --thread-content-max-width: <value> !important; }
+main,
+main [class*="--thread-content-max-width:"] {
+  --thread-content-max-width: <value> !important;
+}
 ```
 
-Not a guess. The live dump reports:
+**`<main>` is the inheritance root, but it is not the only declaration site.** An
+earlier dump reported one declaration on `main` and was read as "main is enough".
+That was wrong: the dump only walks elements whose computed value differs from
+their parent's, and at the time the whole thread already shared one value, so the
+turn-level redeclaration was invisible. With the variable actually working, the
+symptom appeared immediately — `main` computed
+`min(54rem, calc(100vw - 3rem))` while the assistant column computed `40rem` and
+measured 560px.
 
+The second declaration site is the turn wrapper, via a Tailwind arbitrary
+property:
+
+```html
+<div data-conversation-screenshot-content=""
+     class="[--thread-content-max-width:40rem]
+            @w-lg/main:[--thread-content-max-width:48rem] mx-auto …">
 ```
-redeclared on 1 element(s): main=74rem [in main]
-composer inside main: true
+
+A declaration on the element itself always beats an inherited value, so that
+`40rem` shadowed everything above it. The second rule overrides the variable
+exactly where it is redeclared, matched by **the variable's own name inside the
+class attribute** — not by a styling class — so it survives Tailwind churn and
+also catches the container-query variant.
+
+This is deliberately not `main *`. Only nodes that redeclare the variable need
+overriding; everything else, the composer included, inherits from `main`.
+
+### Ancestor-chain probe
+
+Run this when a column does not match its preset. It walks from the leaf up to
+`html`, printing the computed variable at every level and flagging the exact node
+that changes it, for all three columns:
+
+```js
+(() => {
+  const V = '--thread-content-max-width';
+  const val = e => getComputedStyle(e).getPropertyValue(V).trim() || '(empty)';
+  const desc = e => {
+    let s = '<' + e.tagName.toLowerCase() + '>';
+    for (const a of ['data-turn', 'data-message-author-role', 'data-conversation-screenshot-content'])
+      if (e.hasAttribute(a)) s += '[' + a + ']';
+    const hit = (e.getAttribute('class') || '').split(/\s+/)
+      .filter(x => x.includes('thread-content-max-width')).join(' ');
+    return s + (hit ? '   class~ ' + hit : '');
+  };
+  const chain = (label, leaf) => {
+    if (!leaf) return console.log(label + ': not found');
+    const out = [];
+    for (let e = leaf; e; e = e.parentElement) {
+      const v = val(e), pv = e.parentElement ? val(e.parentElement) : null;
+      out.push('  ' + v.padEnd(34) + (pv && pv !== v ? ' <<< SET HERE  ' : '               ') + desc(e));
+    }
+    console.log(label + '  (leaf -> html)\n' + out.join('\n'));
+  };
+  const a = document.querySelector('[data-message-author-role="assistant"] .markdown');
+  const u = document.querySelector('[data-message-author-role="user"]');
+  const c = document.querySelector('main form');
+  chain('ASSISTANT', a); chain('USER', u); chain('COMPOSER', c);
+  const w = e => e ? Math.round(e.getBoundingClientRect().width) : 'n/a';
+  console.log('widths   assistant', w(a && a.closest('section[data-turn]')),
+              ' user', w(u && u.closest('section[data-turn]')),
+              ' composer', w(c));
+})()
 ```
 
-That settles it. `<main>` is the only element that declares
-`--thread-content-max-width`; nothing below it shadows the value; the composer and
-the message columns inherit from that same node. A rule on `<main>` reaches all
-three, and `!important` beats ChatGPT's own declaration on the same element.
-
-`<main>` is a semantic landmark, not a utility class, so this is not a
-Tailwind-churn hook.
-
-1.4.0 used `*` as insurance against not knowing where the variable was declared.
-With the declaration site measured, that insurance is dead weight — it put an
-explicit declaration on every node in the thread and bought no coverage that
-inheriting from `<main>` does not already give.
-
-If a future build declares the variable deeper, the dump reports it as a second
-line and the fix is `main, main *`.
+Every `<<< SET HERE` line is a node that needs covering. If one of them carries no
+`class~` entry, the declaration comes from ChatGPT's own stylesheet rather than an
+arbitrary property, and the class-attribute hook cannot reach it — report the line
+rather than widening the selector.
 
 Everything that reads the variable moves together — assistant messages, user
 messages, composer — **as long as it reads the variable**. Anything that hard-codes
