@@ -1,200 +1,195 @@
+<div align="center">
+
 # DenseGPT
 
 **Make ChatGPT denser, calmer and easier to scan — both visually and linguistically.**
 
-Two layers, no extension, no JavaScript:
+[![UserCSS](https://img.shields.io/badge/UserCSS-Stylus-2f6feb?style=flat-square)](https://github.com/openstyles/stylus)
+[![Release](https://img.shields.io/github/v/release/yunmin311/DenseGPT?style=flat-square&color=2f6feb)](https://github.com/yunmin311/DenseGPT/releases)
+[![License](https://img.shields.io/github/license/yunmin311/DenseGPT?style=flat-square&color=2f6feb)](LICENSE)
+[![JavaScript](https://img.shields.io/badge/JavaScript-none-2f6feb?style=flat-square)](densegpt.user.css)
+
+**English** · [简体中文](README.zh-CN.md)
+
+</div>
+
+---
+
+ChatGPT wastes two kinds of space. The page is airy — oversized heading gaps, loose
+lists, a reading column narrower than the window. And the answers are padded —
+preamble, closing summaries, one-sentence paragraphs, Markdown used as decoration.
+
+DenseGPT fixes both, from opposite ends.
 
 | Layer | File | Fixes |
-| --- | --- | --- |
-| Visual density | `densegpt.user.css` | ChatGPT's reading layout — airy paragraph rhythm, oversized heading gaps, loose lists |
-| Response density | `STYLE.md` + `presets/` | The model's output — preamble, closing summaries, one-sentence paragraphs, Markdown as decoration |
+| :--- | :--- | :--- |
+| **Visual density** | [`densegpt.user.css`](densegpt.user.css) | One UserCSS file. Tightens the reading layout and gives real control over content width. |
+| **Response density** | [`STYLE.md`](STYLE.md) + [`presets/`](presets) | Paste-ready instructions that make the model itself answer densely. |
 
-Use either on its own. They fix the same problem from opposite ends.
+Use either on its own. Together they compound.
 
-## Install — visual layer
+## Contents
 
-1. Install [Stylus](https://github.com/openstyles/stylus) (Chrome / Firefox / Edge).
-2. Open [`densegpt.user.css`](densegpt.user.css) → **Raw** → Stylus offers to install it.
+- [Install](#install)
+- [Content width](#content-width)
+- [Response density](#response-density)
+- [What it changes, exactly](#what-it-changes-exactly)
+- [Documentation](#documentation)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+
+## Install
+
+1. Install [Stylus](https://github.com/openstyles/stylus) — Chrome, Edge or Firefox.
+2. Open **[densegpt.user.css](https://raw.githubusercontent.com/yunmin311/DenseGPT/main/densegpt.user.css)**. Stylus offers to install it.
 3. Reload `chatgpt.com`.
 
-**To update, use Stylus → Manage → Check for updates.** Do not re-import: *Write
-new style → Import* creates a *second* copy of the style, and two copies both
-injecting `!important` width rules make settings look like they do nothing. It also
-resets every saved value.
+> [!IMPORTANT]
+> **To update, use Stylus → Manage → Check for updates.**
+> Do not re-import. *Write new style → Import* creates a **second** copy of the
+> style; two copies both injecting `!important` rules make settings look like they
+> do nothing, and a fresh copy resets every saved value.
 
-### Content width
+Nothing beyond Stylus: no injected JavaScript, no network requests, no telemetry.
+One CSS file you can read in five minutes.
 
-Stylus → DenseGPT → **Configure**. Full detail in
-[`docs/content-width.md`](docs/content-width.md).
+## Content width
+
+Replaces the Widescreen extension. Stylus → DenseGPT → **Configure**.
 
 | Width preset | Width | For |
-| --- | --- | --- |
+| :--- | :--- | :--- |
 | Reading | `44rem` / 704px | long prose, narrowest column |
-| **Balanced** (default) | `54rem` / 864px | everyday reading |
+| **Balanced** *(default)* | `54rem` / 864px | everyday reading |
 | Wide | `66rem` / 1056px | code blocks and tables |
 | Ultra | `78rem` / 1248px | large screens, reference material |
 | Custom | slider, 36–90rem | anything in between |
 
-The slider is read only when the preset is Custom; the four presets ignore it.
-Everything is wrapped in `min(…, calc(100vw - 3rem))`, so a narrow window shrinks
-the column instead of pinning text to the edges, keeping a 1.5rem gutter.
+The slider is read **only** when the preset is Custom; the four presets ignore it.
 
-Two rules: one on `main`, the inheritance root, and one on the turn wrapper,
-which redeclares `--thread-content-max-width` on itself through a Tailwind
-arbitrary property and would otherwise shadow the inherited value. The second is
-matched by the variable's own name, not by a styling class. It is a `max-width`,
-so a value wider than the available column is simply inert and can never force
-horizontal overflow.
+Every value is wrapped in `min(…, calc(100vw - 3rem))`, so a narrow window shrinks
+the column instead of pinning text to the edges. It feeds ChatGPT's own
+`--thread-content-max-width`, so assistant messages, your messages and the composer
+stay on one centre axis — and because it is a `max-width`, a value wider than the
+available space is simply inert and can never cause horizontal overflow.
 
-[`docs/width-preview.html`](docs/width-preview.html) is a standalone page that
-reproduces the mechanism with the controls wired live — open it directly to pick a
-Custom value or to confirm the behaviour without touching ChatGPT.
+[`docs/width-preview.html`](docs/width-preview.html) is a standalone page — open it
+directly, no server — for picking a Custom value without touching ChatGPT.
 
-Spacing is not configurable. Every value is fixed and verified by eye on real
-output — no density slider, no scalar, no calc. They are listed in full in
-[`docs/design-principles.md`](docs/design-principles.md).
+## Response density
 
-**One set of tokens.** Two inks and four surfaces, all anchored to `currentColor`:
-`--dg-surface-soft` (inline code), `--dg-surface-block` and `--dg-edge`
-(blockquote), `--dg-edge-soft` (horizontal rule). A category is separated by
-shifting the same ink a few percent toward a desaturated hue — never by giving it
-a colour of its own — so a quoted source reads differently from a piece of code
-while both still read grey. Surfaces stay at 5–6% alpha, edges at 18–35%, and
-there is exactly one literal colour in the file: the hue anchor.
+The CSS makes the page denser. This makes the *answers* denser.
 
-**Light and dark are inherited, untouched.** No theme detection of any kind, and
-no rule for `html`, `body` or `:root`. Fenced code blocks are not touched at all —
-background, colours, font size and syntax highlighting stay exactly as ChatGPT
-ships them. Sidebar, links, tables and buttons are not styled; the composer is
-affected only by width.
+[`STYLE.md`](STYLE.md) is the spec; `presets/` are compiled for each tool:
 
-## Install — response layer
+| Preset | Where it goes |
+| :--- | :--- |
+| [`presets/chatgpt-custom-instructions.md`](presets/chatgpt-custom-instructions.md) | ChatGPT → Settings → Personalization → Custom instructions |
+| [`presets/codex.md`](presets/codex.md) | `AGENTS.md` |
+| [`presets/claude-code.md`](presets/claude-code.md) | `CLAUDE.md` |
 
-[`STYLE.md`](STYLE.md) is the spec. `presets/` are compiled versions:
+### Paste this into ChatGPT
 
-- [`presets/chatgpt-custom-instructions.md`](presets/chatgpt-custom-instructions.md) — fits the 1500-char Custom Instructions field
-- [`presets/codex.md`](presets/codex.md) — `AGENTS.md` block
-- [`presets/claude-code.md`](presets/claude-code.md) — `CLAUDE.md` block
+Settings → **Personalization** → **Custom instructions** → *"What traits should
+ChatGPT have?"*. 1456 characters, fits the 1500-character field.
 
-Core rules: conclusion first · never restate context · no preamble or closing
-summary · Markdown is structure, not decoration · no consecutive one-sentence
-paragraphs · whitespace under ~40% · length follows the question · assumes a CS
-background · `"explain in detail"` overrides everything.
+```text
+Answer first: conclusion, then only the reasoning that changes what I do next. Never restate my question or the context I pasted.
 
-## Structure
+Density over packaging. Cut filler, not content. No opening pleasantries, no closing summary, no "let me know if" — end on the last useful line.
 
-```
-densegpt.user.css          the whole visual layer, 259 lines
-STYLE.md                   response spec
-presets/                   per-tool paste blocks
-docs/design-principles.md  the density model, and what is never compressed
-docs/selectors.md          every DOM hook, its stability, how to repair it
-docs/content-width.md      the width setting, its install traps, its self-test
-docs/width-preview.html    standalone preview of the width mechanism
-screenshots/
+Markdown is structure, not decoration. Headings only when the answer has 2+ real parts. Lists only for parallel enumerable items. Tables only for 2+ dimensions over 3+ rows. Bold only for the term being defined or the value being decided. Code formatting for identifiers, paths, flags, commands. Never write consecutive one-sentence paragraphs — join them. Keep visual whitespace under ~40% of the answer.
+
+Length follows the question: a one-line question gets a one-line answer. Don't widen scope for completeness, don't append related-but-unasked knowledge, don't produce a report unless I ask for one.
+
+Assume a university CS background and heavy hands-on AI-tool experience. Don't define standard terms. Take a position: recommend one option and say why in a clause. State uncertainty in a few words ("probably X, unverified") instead of hedging across a paragraph.
+
+Voice: direct, plain, technical. No metaphors, no marketing verbs, no self-assessment, no enthusiasm padding. Active voice, shorter word.
+
+No images or diagrams unless I ask.
+
+On request these override the default: "explain in detail" = full depth; "write a report" = long form; "just the answer" = one line.
 ```
 
-## The rule
+A 593-character short version, plus notes on Projects and per-project instructions,
+is in [`presets/chatgpt-custom-instructions.md`](presets/chatgpt-custom-instructions.md).
 
-> Increase information density without reducing semantic clarity.
+Two rules do most of the work: **no closing summary** and **no consecutive
+one-sentence paragraphs**. The style layer is designed to pair with the CSS — tight
+paragraph rhythm only reads well when the model stops padding, and dense prose only
+scans well when the page gives it a hierarchy.
 
-Heading, paragraph, list, inline code, code block and quote must stay
-distinguishable at a glance. Anything that fails that is a regression, however
-much it tightens the page.
+## What it changes, exactly
 
-## Status
+Nine rules on assistant markdown, plus two for width. That is the whole stylesheet.
 
-**2.1.0 - the width setting was never wired up.** `@preprocessor default`
-compiles each `@var` into a CSS custom property; it does not substitute
-`/*[[name]]*/` placeholders, which belong to `@preprocessor uso`. Every release
-up to 2.0.0 used placeholders, so the declaration compiled to an empty value and
-**content width did nothing at any preset**. The expression now reads Stylus's own
-generated `--dg-width-preset` and `--dg-width-custom` directly, and select
-options carry stable keys so a label can be reworded without resetting saved
-choices. Evidence and the manual end-to-end checklist are in
-[`docs/content-width.md`](docs/content-width.md).
+| Element | Value |
+| :--- | :--- |
+| `p` | `margin: 0.45em 0` · `line-height: 1.65` |
+| `h2` | `margin: 1.15em 0 0.45em` · `font-size: 1.15em` |
+| `h3` | `margin: 0.9em 0 0.35em` · `font-size: 1.05em` |
+| `ul`, `ol` | `margin: 0.35em 0 0.45em` |
+| `li` | `margin: 0.12em 0` |
+| inline code | 5% `currentColor` fill · `4px` radius · no border, no shadow |
+| `blockquote` | one `3px` left rule · faint slate fill · `6px` radius · normal text colour |
+| `em`, `i` | `font-weight: 500` — bold-italic still bold |
+| `hr` | 1px hairline at 18% |
 
-**2.0.0 - width presets plus a free slider.** Configure now has two controls:
-**Width preset** (Reading / Balanced / Wide / Ultra / Custom, labelled by purpose)
-and **Custom width**, a native slider from 36 to 90rem, read only in Custom mode.
-Two install bugs are fixed by documentation: re-importing to update created a
-*second* copy of the style whose `!important` rules made settings look dead, and
-option labels that named their own value reset every saved choice whenever a value
-was tuned. Everything is measured in
-[`docs/content-width.md`](docs/content-width.md); `content_width` is replaced by
-`width_preset` + `width_custom`, so the width choice resets once on upgrade.
+**Not touched:** body and heading colours, links, tables, bold, fenced code blocks
+(background, syntax highlighting and font size stay ChatGPT's), the sidebar, the top
+bar and every message control.
 
-**1.8.0 — rolled back to the last stable stylesheet.** Citation pills, file-tile
-tints and app blocks are removed. All three had stable attribute hooks, but each
-needed live probing to find that the hook element was a transparent shell rather
-than the painted surface, and the app card turned out to be a cross-document
-`<iframe>` that CSS cannot reach at all. The findings are kept in
-[`docs/selectors.md`](docs/selectors.md) as a record; none of it is in the
-stylesheet.
+**No theme detection.** No `html.dark`, no `prefers-color-scheme`, and no rule for
+`html`, `body` or `:root`. Light and dark are inherited from ChatGPT exactly as
+shipped. Four colour values exist in the entire file.
 
-What remains is what was verified by eye and has stayed stable: markdown rhythm,
-inline code, blockquote, emphasis, horizontal rule, and content width.
+> **Increase information density without reducing semantic clarity.**
+>
+> Heading, paragraph, list, inline code, code block and quote must stay
+> distinguishable at a glance. Anything that fails that is a regression, however
+> much it tightens the page.
 
-**1.5.0 — content width moves onto a measured hook.** A live DOM dump reports
-`--thread-content-max-width` declared on exactly one element, `<main>`, with the
-composer inside it. The rule shrinks from `* { … }` to `main { … }`: same coverage
-of assistant, user and composer columns, without an explicit declaration on every
-node in the thread.
+## Documentation
 
-Citation, attachment and app-block tints are still **not implemented**. The dumped
-thread contained none of those elements, so their markup is unknown, and a guessed
-selector is worse than an absent one.
+| Document | What is in it |
+| :--- | :--- |
+| [`docs/design-principles.md`](docs/design-principles.md) | Every value, why it is that value, and what may never be compressed |
+| [`docs/content-width.md`](docs/content-width.md) | The width setting end to end: how preset and slider combine, install traps, a console self-test |
+| [`docs/selectors.md`](docs/selectors.md) | Every DOM hook, its stability, and how to repair it when ChatGPT changes |
+| [`CHANGELOG.md`](CHANGELOG.md) | Version history, including what failed and why |
 
-**1.4.0 — hue-traced tokens, italic weight, hairline rule.** The three flat greys
-become two inks and four surfaces: a category is now separated by shifting the
-*same* ink 15% toward a desaturated hue, at identical lightness, rather than by a
-colour of its own. The blockquote moves onto the cite ink so a quoted source no
-longer reads as code. `em`/`i` get `font-weight: 500` (bold-italic excluded, so
-`strong` keeps its weight). `hr` becomes a 1px hairline at 18%.
+## Troubleshooting
 
-The typed source palette — app, PDF, Markdown, CSS, JSON — is specified in
-[`docs/design-principles.md`](docs/design-principles.md) but **not implemented**:
-nothing in assistant markdown carries a source type, so there is no selector to
-attach it to. `docs/selectors.md` has a console dump that reports what citation
-and file chips actually are.
+| Symptom | Cause |
+| :--- | :--- |
+| Settings do nothing | More than one copy installed. Stylus → Manage → delete the extras. |
+| No **Configure** gear | The metadata block failed to parse. Reinstall from the raw URL. |
+| Nothing is styled at all | ChatGPT renamed its scope attribute. See [`docs/selectors.md`](docs/selectors.md) — a one-line repair. |
+| Width does nothing | ChatGPT added a new declaration site for its width variable. The ancestor-chain probe in [`docs/selectors.md`](docs/selectors.md) finds it. |
 
-**1.3.0 — one token set, a full blockquote reset, and width on a hook that cannot
-be shadowed.** Three literal slate blues are gone, replaced by three
-`currentColor` tokens. The blockquote now clears ChatGPT's borders, box-shadow,
-background image, generated quote marks and inherited indent before drawing its
-own single left rule. Content width moved from three class-matched rules to one
-universal-selector override of `--thread-content-max-width`.
+[`docs/content-width.md`](docs/content-width.md) carries a console self-test that
+reports all of the above from computed styles rather than guesswork.
 
-Unconfirmed, both answered by the console check in
-[`docs/selectors.md`](docs/selectors.md): the true source of the blockquote double
-line, and which columns the width rule actually reaches.
+## Compatibility
 
-**1.2.0 — minimum rollback to the verified baseline, plus Auto width.**
+Chrome, Edge and Firefox with Stylus. Requires `color-mix()` and `:has()` —
+Chrome 111+, Firefox 113+, Safari 16.4+. Scoped to `chatgpt.com` only.
 
-1.0.0 drove every gap from one density scalar; it flattened hierarchy and failed
-live. 1.1.0 hand-set the spacing but re-tuned it instead of restoring it, and kept
-`currentColor` tints; spacing, inline code and blockquote all read too heavy, and
-it failed live too. 1.2.0 is the seven verified values verbatim, nothing else, plus
-content width.
+## Contributing
 
-Everything else is deleted: the density scalar and all `calc`, all theme
-detection, all derived colour, and every rule for `h1`, `h4`–`h6`, `pre`, `table`,
-`hr`, `.katex-display`, first/last-child resets, margin-collapse fixes and
-Tailwind quote-mark resets.
+ChatGPT's DOM moves. If a selector breaks, the most useful bug report is the output
+of the probe in [`docs/selectors.md`](docs/selectors.md) — computed styles and
+bounding rects beat a description of what it looks like.
 
-Unconfirmed: the three content-width rules. If width does nothing, run the console
-checks in [`docs/selectors.md`](docs/selectors.md) and report the numbers rather
-than adding selectors.
-
-Not planned: browser extension, injected scripts, React UI, config system, custom
-fonts, gradients, animation, colour themes.
+Spacing values are deliberate and were verified by eye on real output. Changing them
+needs a reason beyond preference.
 
 ## References
 
 - [openstyles/stylus](https://github.com/openstyles/stylus) — UserCSS metadata and variable spec
-- [catppuccin/userstyles](https://github.com/catppuccin/userstyles) — semantic selector discipline, light/dark structure, maintenance conventions
+- [catppuccin/userstyles](https://github.com/catppuccin/userstyles) — semantic selector discipline, light/dark structure
 - [tobimori/awesome-userstyles](https://github.com/tobimori/awesome-userstyles) — ecosystem survey
 
 ## License
 
-MIT
+[MIT](LICENSE) © yunmin311
